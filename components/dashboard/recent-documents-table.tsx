@@ -11,6 +11,7 @@ import {
   ArrowRight,
   ExternalLink,
   Eye,
+  Sparkles,
 } from "lucide-react";
 import { DocumentItem } from "@/types";
 import { formatTimeAgo, formatBytes } from "@/lib/utils";
@@ -25,16 +26,16 @@ export function RecentDocumentsTable({
       case "COMPLETED":
       case "READY":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800">
-            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 shadow-[0_0_8px_rgba(16,185,129,0.15)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Processed
           </span>
         );
       case "REVIEW_REQUIRED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800">
-            <AlertTriangle className="w-3 h-3 text-amber-500" />
-            Review Required
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.15)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+            Review Needed
           </span>
         );
       case "PROCESSING":
@@ -42,22 +43,22 @@ export function RecentDocumentsTable({
       case "EXTRACTING":
       case "WORKFLOW_RUNNING":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800 animate-pulse">
-            <Clock className="w-3 h-3 text-blue-500" />
-            Processing
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 shadow-[0_0_8px_rgba(99,102,241,0.2)]">
+            <div className="w-2 h-2 border border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            Extracting
           </span>
         );
       case "FAILED":
       case "REJECTED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800">
-            <XCircle className="w-3 h-3 text-rose-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/25">
+            <XCircle className="w-3 h-3 text-rose-400" />
             Failed
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-300">
             {status}
           </span>
         );
@@ -66,7 +67,7 @@ export function RecentDocumentsTable({
 
   const getConfidenceBadge = (confidence: number, status: string) => {
     if (status === "PROCESSING" || !confidence) {
-      return <span className="text-slate-400 font-mono text-xs">—</span>;
+      return <span className="text-slate-500 font-mono text-xs">—</span>;
     }
 
     const percentage = Math.round(confidence * 100);
@@ -74,26 +75,26 @@ export function RecentDocumentsTable({
     const isMed = percentage >= 70 && percentage < 90;
 
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         <span
-          className={`text-xs font-bold tabular-nums ${
+          className={`text-xs font-black tabular-nums font-mono ${
             isHigh
-              ? "text-emerald-600 dark:text-emerald-400"
+              ? "text-emerald-400"
               : isMed
-              ? "text-blue-600 dark:text-blue-400"
-              : "text-amber-600 dark:text-amber-400"
+              ? "text-indigo-400"
+              : "text-amber-400"
           }`}
         >
           {percentage}%
         </span>
-        <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden hidden sm:block">
+        <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden hidden sm:block">
           <div
-            className={`h-full rounded-full ${
+            className={`h-full rounded-full transition-all duration-300 ${
               isHigh
-                ? "bg-emerald-500"
+                ? "bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_8px_#10B981]"
                 : isMed
-                ? "bg-blue-500"
-                : "bg-amber-500"
+                ? "bg-gradient-to-r from-indigo-500 to-purple-400"
+                : "bg-gradient-to-r from-amber-500 to-orange-400"
             }`}
             style={{ width: `${percentage}%` }}
           />
@@ -103,98 +104,103 @@ export function RecentDocumentsTable({
   };
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
-      <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+    <div className="rounded-2xl glass-surface dark:bg-[#0E1424]/90 border border-slate-200/80 dark:border-white/[0.08] shadow-lg overflow-hidden">
+      {/* Table Header Strip */}
+      <div className="p-5 border-b border-slate-100 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-black/20">
         <div>
-          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-            Recent Documents
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Realtime ingestion, OCR parsing, and classification pipeline status
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+              Realtime Ingestion & Pipeline Stream
+            </h2>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              Live
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Active OCR parsing, deterministic rule validation, and approval stage monitoring
           </p>
         </div>
 
         <Link
           href="/documents"
-          className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 flex items-center gap-1 group"
+          className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 flex items-center gap-1 group self-start sm:self-auto"
         >
-          <span>View All Documents</span>
+          <span>All Documents Repository</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
         </Link>
       </div>
 
+      {/* High-Tech Table Body */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50/75 dark:bg-slate-800/40 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+          <thead className="bg-slate-50/80 dark:bg-white/[0.02] text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-white/[0.06]">
             <tr>
-              <th className="py-3 px-5">Document</th>
-              <th className="py-3 px-5">Type</th>
-              <th className="py-3 px-5">Status</th>
-              <th className="py-3 px-5">Confidence</th>
-              <th className="py-3 px-5">Uploaded</th>
-              <th className="py-3 px-5 text-right">Action</th>
+              <th className="py-3 px-5">Document Name</th>
+              <th className="py-3 px-5">Classification</th>
+              <th className="py-3 px-5">Pipeline Status</th>
+              <th className="py-3 px-5">Extraction Confidence</th>
+              <th className="py-3 px-5">Timestamp</th>
+              <th className="py-3 px-5 text-right">Inspect</th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-            {documents.slice(0, 7).map((doc) => (
+          <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04]">
+            {documents.slice(0, 6).map((doc) => (
               <tr
                 key={doc.id}
-                className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group"
+                className="group hover:bg-slate-50/70 dark:hover:bg-white/[0.03] transition-colors"
               >
+                {/* Document Name & Size */}
                 <td className="py-3.5 px-5">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/60 flex items-center justify-center shrink-0">
-                      <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:scale-105 group-hover:border-indigo-500/40 group-hover:text-indigo-400 transition-all">
+                      <FileText className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
                       <Link
                         href={`/documents/${doc.id}`}
-                        className="font-medium text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors block truncate max-w-[200px] sm:max-w-xs"
+                        className="text-xs font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 truncate block max-w-[200px] sm:max-w-xs transition-colors"
                       >
                         {doc.name}
                       </Link>
-                      <div className="text-[11px] text-slate-400">
-                        {formatBytes(doc.fileSizeBytes)} • {doc.pageCount} pg
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                        <span>{formatBytes(doc.fileSizeBytes)}</span>
+                        <span>•</span>
+                        <span>{doc.mimeType.split("/")[1]?.toUpperCase() || "PDF"}</span>
                       </div>
                     </div>
                   </div>
                 </td>
 
+                {/* Category / Type */}
                 <td className="py-3.5 px-5">
-                  <span className="inline-block text-xs font-medium text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300">
                     {doc.documentType}
                   </span>
                 </td>
 
+                {/* Status Badge */}
                 <td className="py-3.5 px-5">{getStatusBadge(doc.status)}</td>
 
+                {/* Confidence */}
                 <td className="py-3.5 px-5">
                   {getConfidenceBadge(doc.overallConfidence, doc.status)}
                 </td>
 
-                <td className="py-3.5 px-5 text-xs text-slate-500 dark:text-slate-400">
+                {/* Ingest Time */}
+                <td className="py-3.5 px-5 text-xs text-slate-400 font-mono">
                   {formatTimeAgo(doc.uploadedAt)}
                 </td>
 
+                {/* Quick Action Button */}
                 <td className="py-3.5 px-5 text-right">
-                  {doc.status === "REVIEW_REQUIRED" ? (
-                    <Link
-                      href={`/review?id=${doc.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow-2xs transition-colors"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      Review Now
-                    </Link>
-                  ) : (
-                    <Link
-                      href={`/documents/${doc.id}`}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <span>Inspect</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </Link>
-                  )}
+                  <Link
+                    href={`/documents/${doc.id}`}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/30 transition-all"
+                  >
+                    <span>Studio</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
                 </td>
               </tr>
             ))}

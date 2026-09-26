@@ -11,11 +11,17 @@ import {
   GitFork,
   ArrowRight,
   ShieldAlert,
+  Sparkles,
+  Bot,
+  Activity,
+  Layers,
+  ArrowUpRight,
 } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { AIInsightCard } from "@/components/dashboard/ai-insight-card";
 import { RecentDocumentsTable } from "@/components/dashboard/recent-documents-table";
+import { PipelineLifecycleTracker } from "@/components/dashboard/pipeline-lifecycle-tracker";
 
 export default function DashboardPage() {
   const { currentUser, documents, approvals } = useApp();
@@ -24,61 +30,86 @@ export default function DashboardPage() {
   const reviewRequiredDocs = documents.filter((d) => d.status === "REVIEW_REQUIRED");
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Top Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            Good morning, {currentUser.fullName.split(" ")[0]}
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Here&apos;s what&apos;s happening with your intelligent workflows today.
-          </p>
-        </div>
+    <div className="space-y-7 animate-in fade-in duration-300">
+      {/* Hero Welcome & Autonomous Operations Bar */}
+      <div className="relative rounded-2xl glass-surface-elevated dark:bg-[#0D1322]/90 border border-slate-200/80 dark:border-white/[0.08] p-6 sm:p-7 shadow-xl overflow-hidden">
+        {/* Luminous background gradients */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
 
-        {/* Primary Action Buttons */}
-        <div className="flex items-center gap-3">
-          <Link
-            href="/documents?action=upload"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-xs hover:shadow-md transition-all active:scale-[0.98]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Upload Document</span>
-          </Link>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.2)]">
+                <Sparkles className="w-3 h-3 text-cyan-400 animate-spin" />
+                AUTONOMOUS DOCUMENT OS
+              </span>
+              <span className="text-xs text-slate-400 font-medium">
+                • {currentUser.organizationName}
+              </span>
+            </div>
 
-          <Link
-            href="/workflows/builder"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/80 shadow-2xs transition-all active:scale-[0.98]"
-          >
-            <GitFork className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            <span>Create Workflow</span>
-          </Link>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+              Command Center, {currentUser.fullName.split(" ")[0]}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
+              Real-time ingestion pipelines, deterministic Python rule evaluations,
+              and multi-tier approval gates are currently operational with zero anomalies.
+            </p>
+          </div>
+
+          {/* High-Impact Action Dock */}
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Link
+              href="/documents?action=upload"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-700 hover:from-indigo-600 hover:to-purple-700 shadow-lg hover:shadow-indigo-500/30 transition-all active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Ingest Document</span>
+            </Link>
+
+            <Link
+              href="/workflows/builder"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/[0.09] shadow-xs transition-all active:scale-[0.98]"
+            >
+              <GitFork className="w-4 h-4 text-purple-400" />
+              <span>Visual Workflow</span>
+            </Link>
+
+            <Link
+              href="/assistant"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-cyan-500 dark:text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 shadow-xs transition-all active:scale-[0.98]"
+            >
+              <Bot className="w-4 h-4" />
+              <span>Ask RAG</span>
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Action Required Banner if Low Confidence / Approvals */}
+      {/* Action Required Banner if Low Confidence / Pending Approvals */}
       {(reviewRequiredDocs.length > 0 || pendingApprovals.length > 0) && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/60 text-amber-900 dark:text-amber-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 shadow-md">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center shrink-0">
-              <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+              <ShieldAlert className="w-4 h-4 text-amber-400" />
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                Action Items Detected
+              <p className="text-[10px] font-black uppercase tracking-wider text-amber-500 dark:text-amber-400">
+                Action Items Pending Deterministic Verification
               </p>
-              <p className="text-sm font-medium">
-                {pendingApprovals.length} approval tasks pending •{" "}
-                {reviewRequiredDocs.length} documents require human review
+              <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {pendingApprovals.length} signoff requests awaiting authorization •{" "}
+                {reviewRequiredDocs.length} documents below 70% threshold
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2.5 self-start sm:self-auto">
             {reviewRequiredDocs.length > 0 && (
               <Link
                 href="/review"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 hover:bg-amber-100/50 transition-colors"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-[#111728] text-amber-500 border border-amber-500/40 hover:bg-amber-500/10 transition-colors"
               >
                 Review Items ({reviewRequiredDocs.length})
               </Link>
@@ -86,16 +117,19 @@ export default function DashboardPage() {
             {pendingApprovals.length > 0 && (
               <Link
                 href="/approvals"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition-colors"
               >
-                Go to Approvals ({pendingApprovals.length})
+                Approvals ({pendingApprovals.length})
               </Link>
             )}
           </div>
         </div>
       )}
 
-      {/* 4 Metric Cards */}
+      {/* 5-Stage Autonomous Pipeline Lifecycle Tracker */}
+      <PipelineLifecycleTracker documents={documents} />
+
+      {/* 4 Elevated Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Documents Processed"
@@ -138,10 +172,10 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* AI Insight Card */}
+      {/* AI Strategic Insight Card */}
       <AIInsightCard />
 
-      {/* Recent Documents Live Pipeline Table */}
+      {/* Recent Documents Realtime Table */}
       <RecentDocumentsTable documents={documents} />
     </div>
   );

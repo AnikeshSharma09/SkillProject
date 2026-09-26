@@ -101,7 +101,7 @@ export default function RegisterPage() {
   const strength = getPasswordStrength();
 
   return (
-    <div className="min-h-screen w-full flex bg-[#F8FAFC] dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <div className="min-h-screen w-full flex bg-[#F8FAFC] dark:bg-[#080B11] text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Left Column: Organization Setup & Architecture Specs */}
       <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white overflow-hidden border-r border-slate-800">
         <div className="absolute inset-0 subtle-grid-bg opacity-30 pointer-events-none" />

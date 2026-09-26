@@ -11,6 +11,7 @@ import {
   Zap,
   ArrowRight,
   ShieldCheck,
+  Cpu,
 } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
 import { processDocumentContent } from "@/lib/ai/document-processor";
@@ -33,7 +34,6 @@ export function DocumentUploadModal({
     addDocument,
     rules,
     approvals,
-    approveTask,
     logAudit,
     addNotification,
   } = useApp();
@@ -80,7 +80,7 @@ export function DocumentUploadModal({
     processPipeline(file);
   };
 
-  // Asynchronous Document Pipeline (Section 18)
+  // Asynchronous Document Pipeline
   const processPipeline = async (file: File) => {
     setIsProcessing(true);
     setProgress(15);
@@ -129,7 +129,7 @@ export function DocumentUploadModal({
       },
     };
 
-    // Step 6: Deterministic Rule Engine Evaluation (Section 28)
+    // Step 6: Deterministic Rule Engine Evaluation
     setCurrentStep("6. Evaluating deterministic business rules...");
     await new Promise((r) => setTimeout(r, 350));
     setProgress(100);
@@ -169,25 +169,25 @@ export function DocumentUploadModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
         onClick={() => {
           if (!isProcessing) onClose();
         }}
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 md:p-8 z-10 animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400">
-              <UploadCloud className="w-4 h-4" />
+      <div className="relative w-full max-w-xl glass-surface-elevated dark:bg-[#0D1222] rounded-3xl shadow-2xl border border-slate-200 dark:border-white/[0.12] p-6 sm:p-8 z-10 animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/[0.08]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+              <UploadCloud className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                Upload & Process Document
+              <h2 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Ingest & Process Document
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                AI pipeline extracts fields, scores confidence, and applies rules
+              <p className="text-xs text-slate-400">
+                Zero-shot multimodal OCR with deterministic rule enforcement
               </p>
             </div>
           </div>
@@ -195,7 +195,7 @@ export function DocumentUploadModal({
           {!isProcessing && (
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -211,8 +211,8 @@ export function DocumentUploadModal({
             onDrop={handleDrop}
             className={`mt-6 border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center transition-all ${
               dragActive
-                ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
-                : "border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50/50 dark:bg-slate-800/20"
+                ? "border-indigo-500 bg-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+                : "border-slate-200 dark:border-white/[0.12] hover:border-indigo-400 dark:hover:border-indigo-500/50 bg-slate-50/50 dark:bg-black/20"
             }`}
           >
             <input
@@ -223,29 +223,29 @@ export function DocumentUploadModal({
               className="hidden"
             />
 
-            <div className="w-14 h-14 rounded-2xl bg-blue-100/70 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/10">
               <UploadCloud className="w-7 h-7" />
             </div>
 
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              Drop your documents here
+            <p className="text-sm font-bold text-slate-800 dark:text-white">
+              Drop enterprise document files here
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               Supports PDF, DOCX, XLSX, JPG, PNG, CSV, TXT (up to 25MB)
             </p>
 
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="mt-5 px-5 py-2.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-200 shadow-2xs transition-all active:scale-95"
+              className="mt-5 px-5 py-2.5 rounded-xl text-xs font-bold bg-white dark:bg-white/[0.08] border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/[0.12] text-slate-800 dark:text-white shadow-sm transition-all active:scale-95 cursor-pointer"
             >
-              Browse files
+              Browse Local Files
             </button>
 
             {/* Quick Demo Pre-selected Buttons */}
-            <div className="mt-6 pt-5 border-t border-slate-200/60 dark:border-slate-800">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                Or Try Sample Documents:
+            <div className="mt-6 pt-5 border-t border-slate-200/60 dark:border-white/[0.06]">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">
+                Or Instant Test Samples:
               </span>
               <div className="flex flex-wrap justify-center gap-2">
                 {[
@@ -258,14 +258,14 @@ export function DocumentUploadModal({
                     key={sample.name}
                     type="button"
                     onClick={() => {
-                      const sampleFile = new File(["sample content"], sample.name, {
+                      const mockFile = new File(["dummy content"], sample.name, {
                         type: "application/pdf",
                       });
-                      handleFileSelected(sampleFile);
+                      handleFileSelected(mockFile);
                     }}
-                    className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 hover:bg-blue-100 transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.08] hover:border-indigo-400 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                   >
-                    ✦ {sample.label}
+                    {sample.label}
                   </button>
                 ))}
               </div>
@@ -273,109 +273,70 @@ export function DocumentUploadModal({
           </div>
         )}
 
-        {/* State 2: Processing in progress */}
+        {/* State 2: Processing Progress */}
         {selectedFile && isProcessing && (
-          <div className="mt-6 py-6 space-y-5">
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
-                  {selectedFile.name}
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  {(selectedFile.size / 1024).toFixed(1)} KB
-                </p>
+          <div className="py-8 space-y-6 text-center">
+            <div className="relative w-16 h-16 mx-auto">
+              <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20" />
+              <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin shadow-[0_0_15px_#6366F1]" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Cpu className="w-6 h-6 text-indigo-400" />
               </div>
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400 tabular-nums">
-                {progress}%
-              </span>
             </div>
 
-            {/* Animated Progress Bar */}
-            <div className="space-y-2">
-              <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-600 to-purple-600 rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+            <div>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                {currentStep}
+              </p>
+              <p className="text-xs text-slate-400 font-mono mt-1">
+                Processing: {selectedFile.name}
+              </p>
+            </div>
 
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-spin" />
-                  {currentStep}
-                </span>
-                <span className="tabular-nums font-mono text-[11px]">
-                  {progress}/100
-                </span>
-              </div>
+            {/* Glowing Progress bar */}
+            <div className="w-full bg-slate-100 dark:bg-white/[0.08] h-2.5 rounded-full overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400 h-full rounded-full transition-all duration-300 shadow-[0_0_10px_#6366F1]"
+                style={{ width: `${progress}%` }}
+              />
             </div>
           </div>
         )}
 
-        {/* State 3: Completed Pipeline */}
+        {/* State 3: Completed Document Result */}
         {completedDoc && !isProcessing && (
-          <div className="mt-6 space-y-5 animate-in fade-in duration-200">
-            <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
-                  Document Intelligence Pipeline Succeeded
-                </p>
-                <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                  Classified as{" "}
-                  <strong className="underline decoration-emerald-400">
-                    {completedDoc.documentType}
+          <div className="py-5 space-y-5 animate-in fade-in">
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-bold text-emerald-400">
+                  Document Ingestion & Analysis Complete
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Classified as <strong className="text-slate-200">{completedDoc.documentType}</strong> with{" "}
+                  <strong className="text-slate-200 font-mono">
+                    {Math.round(completedDoc.classificationConfidence * 100)}%
                   </strong>{" "}
-                  with{" "}
-                  <strong>{(completedDoc.overallConfidence * 100).toFixed(1)}%</strong>{" "}
                   confidence.
                 </p>
               </div>
             </div>
 
-            {/* Rule Engine Alert if applicable */}
+            {/* Rule Trigger notice if matched */}
             {triggeredRuleNotice && (
-              <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-300">
-                <Zap className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>{triggeredRuleNotice}</span>
+              <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-xs flex items-center gap-2.5 text-indigo-300">
+                <Zap className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>
+                  <strong>Deterministic Rule Fired:</strong> {triggeredRuleNotice}
+                </span>
               </div>
             )}
 
-            {/* Extracted Fields Summary Box */}
-            <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/80 max-h-48 overflow-y-auto">
-              {completedDoc.extractedFields?.map((field) => (
-                <div
-                  key={field.id}
-                  className="px-4 py-2.5 flex items-center justify-between text-xs"
-                >
-                  <span className="font-medium text-slate-500 dark:text-slate-400">
-                    {field.fieldLabel}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">
-                      {field.extractedValue}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-                        field.confidence >= 0.9
-                          ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400"
-                          : "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400"
-                      }`}
-                    >
-                      {(field.confidence * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
               <button
                 type="button"
                 onClick={handleReset}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 Upload Another
               </button>
@@ -383,10 +344,9 @@ export function DocumentUploadModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-xs transition-colors flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all cursor-pointer"
               >
-                <span>Done</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                Done
               </button>
             </div>
           </div>
