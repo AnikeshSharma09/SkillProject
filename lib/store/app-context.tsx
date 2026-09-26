@@ -223,11 +223,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         generatedName.charAt(0).toUpperCase() + generatedName.slice(1);
       const newUser: UserProfile = {
         id: `usr-${Date.now()}`,
-        organizationId: "org-apex-01",
+        organizationId: "org-symbiosis-01",
         email: cleanEmail,
         fullName: formattedName || "Enterprise User",
         role: "ADMIN",
-        organizationName: "Apex Global Enterprises",
+        organizationName: "Symbiosis University",
         avatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
       };
 

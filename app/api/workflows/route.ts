@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const newWorkflow = {
       id: `wf-${Date.now()}`,
-      organizationId: "org-apex-01",
+      organizationId: "org-symbiosis-01",
       name: body.name || "Untitled Workflow",
       description: body.description || "Created via API",
       category: body.category || "Operations",

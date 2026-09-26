@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DEMO_USERS, INITIAL_DOCUMENTS } from "../lib/store/demo-data";
+import { DEMO_USERS, INITIAL_DOCUMENTS, DEMO_ORGANIZATION } from "../lib/store/demo-data";
 import { UserRole } from "../types";
 
 describe("Multi-Tenancy & RBAC Security Enforcement", () => {
@@ -14,15 +14,15 @@ describe("Multi-Tenancy & RBAC Security Enforcement", () => {
     expect(approver).toBeDefined();
     expect(employee).toBeDefined();
 
-    // Verify all users belong to tenant organization org-apex-01
+    // Verify all users belong to tenant organization
     DEMO_USERS.forEach((user) => {
-      expect(user.organizationId).toBe("org-apex-01");
+      expect(user.organizationId).toBe(DEMO_ORGANIZATION.id);
     });
   });
 
   it("should isolate document access by organization tenant ID", () => {
     INITIAL_DOCUMENTS.forEach((doc) => {
-      expect(doc.organizationId).toBe("org-apex-01");
+      expect(doc.organizationId).toBe(DEMO_ORGANIZATION.id);
       expect(doc.fileHash).toMatch(/^sha256_/);
       expect(doc.fileSizeBytes).toBeGreaterThan(0);
     });

@@ -2,59 +2,59 @@
 
 @layer base {
   :root {
-    --background: #F8FAFC;
+    --background: #F4F6FC;
     --card: #FFFFFF;
-    --card-foreground: #090D16;
+    --card-foreground: #0F172A;
     --popover: #FFFFFF;
-    --popover-foreground: #090D16;
-    --primary: #4F46E5;
+    --popover-foreground: #0F172A;
+    --primary: #2563EB;
     --primary-foreground: #FFFFFF;
     --secondary: #F1F5F9;
     --secondary-foreground: #0F172A;
-    --muted: #F1F5F9;
+    --muted: #F8FAFC;
     --muted-foreground: #64748B;
     --accent: #EEF2FF;
-    --accent-foreground: #4F46E5;
+    --accent-foreground: #2563EB;
     --ai-accent: #7C3AED;
     --ai-accent-foreground: #FFFFFF;
     --destructive: #EF4444;
     --destructive-foreground: #FFFFFF;
     --border: #E2E8F0;
     --input: #E2E8F0;
-    --ring: #6366F1;
-    --radius: 0.875rem;
+    --ring: #3B82F6;
+    --radius: 1rem;
 
     --success: #10B981;
     --warning: #F59E0B;
     --error: #EF4444;
-    --info: #06B6D4;
+    --info: #0284C7;
   }
 
   .dark {
-    --background: #080B11;
-    --card: #0E1424;
+    --background: #0B0F19;
+    --card: #111827;
     --card-foreground: #F8FAFC;
-    --popover: #0E1424;
+    --popover: #111827;
     --popover-foreground: #F8FAFC;
-    --primary: #6366F1;
+    --primary: #3B82F6;
     --primary-foreground: #FFFFFF;
-    --secondary: #141B2D;
+    --secondary: #1F2937;
     --secondary-foreground: #F8FAFC;
-    --muted: #141B2D;
+    --muted: #1F2937;
     --muted-foreground: #94A3B8;
     --accent: #1E293B;
-    --accent-foreground: #818CF8;
+    --accent-foreground: #60A5FA;
     --ai-accent: #A855F7;
     --ai-accent-foreground: #FFFFFF;
-    --destructive: #F43F5E;
+    --destructive: #EF4444;
     --destructive-foreground: #FFFFFF;
     --border: rgba(255, 255, 255, 0.08);
     --input: rgba(255, 255, 255, 0.08);
-    --ring: #818CF8;
+    --ring: #60A5FA;
 
     --success: #10B981;
     --warning: #F59E0B;
-    --error: #F43F5E;
+    --error: #EF4444;
     --info: #38BDF8;
   }
 }
@@ -68,148 +68,78 @@ body {
   letter-spacing: -0.011em;
 }
 
-/* High-tech ambient background grid & radial mesh */
-.cyber-canvas-bg {
-  background-color: #080B11;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.10) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
-    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
+/* Light SaaS Pastel Hero Mesh */
+.pastel-hero-bg {
+  background: radial-gradient(circle at 10% 20%, rgba(219, 234, 254, 0.7) 0%, transparent 40%),
+              radial-gradient(circle at 90% 10%, rgba(237, 233, 254, 0.8) 0%, transparent 40%),
+              radial-gradient(circle at 50% 80%, rgba(224, 231, 255, 0.6) 0%, transparent 50%),
+              #F8FAFC;
 }
 
-.subtle-grid-bg {
-  background-image: radial-gradient(rgba(148, 163, 184, 0.15) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-.dark .subtle-grid-bg {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-/* Premium Glassmorphic Surfaces */
-.glass-surface {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
-}
-.dark .glass-surface {
-  background: rgba(14, 20, 36, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+/* Crisp Clean White Cards with Delicate Shadow */
+.clean-card {
+  background: #FFFFFF;
+  border: 1px solid #E8EEF5;
+  box-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  border-radius: 1rem;
 }
 
-.glass-surface-elevated {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.06);
-}
-.dark .glass-surface-elevated {
-  background: rgba(18, 25, 45, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+.dark .clean-card {
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
 }
 
-/* Sleek Cyber Border Glows */
-.cyber-card {
-  position: relative;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+/* Primary Gradient Buttons */
+.btn-primary-gradient {
+  background: linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.35);
+  transition: all 0.2s ease;
 }
-.cyber-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent 40%, rgba(99, 102, 241, 0.25));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  opacity: 0.8;
-  transition: opacity 0.25s ease;
-}
-.cyber-card:hover::before {
-  opacity: 1;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(168, 85, 247, 0.3), rgba(6, 182, 212, 0.5));
+.btn-primary-gradient:hover {
+  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.45);
+  transform: translateY(-1px);
 }
 
-/* Neon Pill Badges */
-.neon-badge-blue {
-  background: rgba(99, 102, 241, 0.1);
-  color: #818CF8;
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  box-shadow: 0 0 12px -2px rgba(99, 102, 241, 0.25);
+.btn-purple-gradient {
+  background: linear-gradient(135deg, #7C3AED 0%, #6366F1 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: 0 4px 14px 0 rgba(124, 58, 237, 0.35);
+  transition: all 0.2s ease;
 }
-
-.neon-badge-green {
-  background: rgba(16, 185, 129, 0.1);
-  color: #34D399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  box-shadow: 0 0 12px -2px rgba(16, 185, 129, 0.25);
-}
-
-.neon-badge-purple {
-  background: rgba(168, 85, 247, 0.1);
-  color: #C084FC;
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  box-shadow: 0 0 12px -2px rgba(168, 85, 247, 0.25);
-}
-
-.neon-badge-amber {
-  background: rgba(245, 158, 11, 0.1);
-  color: #FBBF24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  box-shadow: 0 0 12px -2px rgba(245, 158, 11, 0.25);
-}
-
-/* AI Gradient Text & Fill */
-.ai-gradient-text {
-  background: linear-gradient(135deg, #6366F1 0%, #A855F7 50%, #06B6D4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.dark .ai-gradient-text {
-  background: linear-gradient(135deg, #818CF8 0%, #C084FC 50%, #38BDF8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.ai-gradient-btn {
-  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #2563EB 100%);
-  background-size: 200% 200%;
-  transition: all 0.3s ease;
-}
-.ai-gradient-btn:hover {
-  background-position: right center;
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.45);
+.btn-purple-gradient:hover {
+  box-shadow: 0 6px 20px 0 rgba(124, 58, 237, 0.45);
+  transform: translateY(-1px);
 }
 
 /* Custom modern scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
+  background: #CBD5E1;
   border-radius: 9999px;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: #374151;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.5);
+  background: #94A3B8;
+}
+
+/* Dot grid for workflow canvas */
+.dot-grid-bg {
+  background-image: radial-gradient(rgba(148, 163, 184, 0.3) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.dark .dot-grid-bg {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
 }

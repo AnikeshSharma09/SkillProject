@@ -148,7 +148,7 @@ export function generateWorkflowFromPrompt(prompt: string): WorkflowDefinition {
 
   return {
     id: wfId,
-    organizationId: "org-apex-01",
+    organizationId: "org-symbiosis-01",
     name: `AI: ${prompt.substring(0, 48)}...`,
     description: `Synthesized from prompt: "${prompt}"`,
     category: isInvoice ? "Finance" : isLeave ? "Human Resources" : "Operations",

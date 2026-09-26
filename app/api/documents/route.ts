@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
     const newDoc = {
       id: `doc-${Date.now()}`,
-      organizationId: "org-apex-01",
+      organizationId: "org-symbiosis-01",
       name: fileName,
       filePath: `/documents/${fileName}`,
       fileSizeBytes: file?.size || 245100,
