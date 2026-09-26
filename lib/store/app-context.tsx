@@ -10,6 +10,7 @@ import {
   NotificationItem,
   RuleDefinition,
   ExtractedField,
+  UserRole,
 } from "@/types";
 import {
   DEMO_USERS,
@@ -19,11 +20,33 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_RULES,
 } from "./demo-data";
+export {
+  DEMO_USERS,
+  INITIAL_DOCUMENTS,
+  INITIAL_APPROVALS,
+  INITIAL_WORKFLOWS,
+  INITIAL_AUDIT_LOGS,
+  INITIAL_RULES,
+};
 
 interface AppContextType {
   currentUser: UserProfile;
   setCurrentUser: (user: UserProfile) => void;
   availableUsers: UserProfile[];
+  isAuthenticated: boolean;
+  login: (
+    email: string,
+    password?: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  register: (data: {
+    fullName: string;
+    email: string;
+    password?: string;
+    organizationName: string;
+    role?: UserRole;
+    industry?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
   documents: DocumentItem[];
   approvals: ApprovalTask[];
   workflows: WorkflowDefinition[];
@@ -70,7 +93,10 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [availableUsers, setAvailableUsers] = useState<UserProfile[]>(DEMO_USERS);
   const [currentUser, setCurrentUser] = useState<UserProfile>(DEMO_USERS[0]); // Sarah Chen (ADMIN)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+
   const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
   const [approvals, setApprovals] = useState<ApprovalTask[]>(INITIAL_APPROVALS);
   const [workflows, setWorkflows] =
@@ -160,6 +186,128 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       diff: metadata?.diff,
     };
     setAuditLogs((prev) => [newLog, ...prev]);
+  };
+
+  // Authentication: Login function
+  const login = async (
+    email: string,
+    password?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Check if user exists in registered list
+    const foundUser = availableUsers.find(
+      (u) => u.email.toLowerCase() === cleanEmail
+    );
+
+    if (foundUser) {
+      setCurrentUser(foundUser);
+      setIsAuthenticated(true);
+      logAudit(
+        "USER_LOGIN",
+        "USER",
+        `User ${foundUser.fullName} (${foundUser.email}) logged in as ${foundUser.role}.`
+      );
+      addNotification({
+        title: "Welcome Back",
+        message: `Signed in as ${foundUser.fullName} (${foundUser.role}).`,
+        type: "system",
+      });
+      return { success: true };
+    }
+
+    // If new email entered directly with password, auto-create user session
+    if (email && email.includes("@")) {
+      const generatedName = email.split("@")[0].replace(/[._-]/g, " ");
+      const formattedName =
+        generatedName.charAt(0).toUpperCase() + generatedName.slice(1);
+      const newUser: UserProfile = {
+        id: `usr-${Date.now()}`,
+        organizationId: "org-apex-01",
+        email: cleanEmail,
+        fullName: formattedName || "Enterprise User",
+        role: "ADMIN",
+        organizationName: "Apex Global Enterprises",
+        avatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+      };
+
+      setAvailableUsers((prev) => [...prev, newUser]);
+      setCurrentUser(newUser);
+      setIsAuthenticated(true);
+
+      logAudit(
+        "USER_LOGIN",
+        "USER",
+        `User ${newUser.fullName} (${newUser.email}) authenticated.`
+      );
+      addNotification({
+        title: "Session Initialized",
+        message: `Welcome, ${newUser.fullName}! Workspace ready.`,
+        type: "system",
+      });
+      return { success: true };
+    }
+
+    return { success: false, error: "Please enter a valid email address." };
+  };
+
+  // Authentication: Register function
+  const register = async (data: {
+    fullName: string;
+    email: string;
+    password?: string;
+    organizationName: string;
+    role?: UserRole;
+    industry?: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    if (!data.fullName.trim() || !data.email.trim() || !data.organizationName.trim()) {
+      return { success: false, error: "Please fill in all mandatory fields." };
+    }
+
+    const cleanEmail = data.email.trim().toLowerCase();
+    const existing = availableUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      return { success: false, error: "An account with this email already exists. Please log in." };
+    }
+
+    const newOrgId = `org-${Date.now()}`;
+    const newUser: UserProfile = {
+      id: `usr-${Date.now()}`,
+      organizationId: newOrgId,
+      email: cleanEmail,
+      fullName: data.fullName.trim(),
+      role: data.role || "ADMIN",
+      organizationName: data.organizationName.trim(),
+      avatarUrl: `https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80`,
+    };
+
+    setAvailableUsers((prev) => [newUser, ...prev]);
+    setCurrentUser(newUser);
+    setIsAuthenticated(true);
+
+    logAudit(
+      "USER_REGISTERED",
+      "USER",
+      `New tenant registered: ${newUser.fullName} (${newUser.email}) for organization ${data.organizationName}.`
+    );
+
+    addNotification({
+      title: "Workspace Created",
+      message: `Welcome to AI-FLOW, ${newUser.fullName}! Organization "${data.organizationName}" initialized.`,
+      type: "system",
+    });
+
+    return { success: true };
+  };
+
+  // Authentication: Logout function
+  const logout = () => {
+    logAudit(
+      "USER_LOGOUT",
+      "USER",
+      `User ${currentUser.fullName} (${currentUser.email}) signed out.`
+    );
+    setIsAuthenticated(false);
   };
 
   const addNotification = (
@@ -380,7 +528,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentUser,
         setCurrentUser,
-        availableUsers: DEMO_USERS,
+        availableUsers,
+        isAuthenticated,
+        login,
+        register,
+        logout,
         documents,
         approvals,
         workflows,

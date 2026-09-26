@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
@@ -19,6 +20,8 @@ import {
   ChevronRight,
   ShieldCheck,
   ChevronDown,
+  LogOut,
+  LogIn,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { useApp } from "@/lib/store/app-context";
@@ -34,7 +37,16 @@ interface NavItem {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { currentUser, setCurrentUser, availableUsers, approvals, documents } = useApp();
+  const router = useRouter();
+  const {
+    currentUser,
+    setCurrentUser,
+    availableUsers,
+    approvals,
+    documents,
+    isAuthenticated,
+    logout,
+  } = useApp();
 
   const pendingApprovalsCount = approvals.filter((a) => a.status === "PENDING").length;
   const reviewRequiredCount = documents.filter((d) => d.status === "REVIEW_REQUIRED").length;
@@ -203,11 +215,31 @@ export function Sidebar() {
 
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           </div>
-          <div className="mt-1 px-1 flex items-center justify-between text-[10px] text-slate-400">
-            <span>Click card to switch role</span>
+
+          <div className="mt-1.5 px-1 flex items-center justify-between text-[10px]">
+            {isAuthenticated ? (
+              <button
+                onClick={() => {
+                  logout();
+                  router.push("/login");
+                }}
+                className="text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>Sign Out</span>
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-semibold"
+              >
+                <LogIn className="w-3 h-3" />
+                <span>Sign In</span>
+              </Link>
+            )}
             <span className="font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Online
+              {isAuthenticated ? "Authenticated" : "Guest Mode"}
             </span>
           </div>
         </div>
