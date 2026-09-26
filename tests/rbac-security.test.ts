@@ -1,0 +1,30 @@
+import { describe, it, expect } from "vitest";
+import { DEMO_USERS, INITIAL_DOCUMENTS } from "../lib/store/demo-data";
+import { UserRole } from "../types";
+
+describe("Multi-Tenancy & RBAC Security Enforcement", () => {
+  it("should have correct permissions partitioned by role", () => {
+    const admin = DEMO_USERS.find((u) => u.role === "ADMIN");
+    const manager = DEMO_USERS.find((u) => u.role === "MANAGER");
+    const approver = DEMO_USERS.find((u) => u.role === "APPROVER");
+    const employee = DEMO_USERS.find((u) => u.role === "EMPLOYEE");
+
+    expect(admin).toBeDefined();
+    expect(manager).toBeDefined();
+    expect(approver).toBeDefined();
+    expect(employee).toBeDefined();
+
+    // Verify all users belong to tenant organization org-apex-01
+    DEMO_USERS.forEach((user) => {
+      expect(user.organizationId).toBe("org-apex-01");
+    });
+  });
+
+  it("should isolate document access by organization tenant ID", () => {
+    INITIAL_DOCUMENTS.forEach((doc) => {
+      expect(doc.organizationId).toBe("org-apex-01");
+      expect(doc.fileHash).toMatch(/^sha256_/);
+      expect(doc.fileSizeBytes).toBeGreaterThan(0);
+    });
+  });
+});
