@@ -4,7 +4,7 @@ import { Sparkles, ArrowRight, BarChart2 } from "lucide-react";
 
 export function AIInsightCard() {
   return (
-    <div className="clean-card p-6 relative overflow-hidden flex flex-col justify-between h-full bg-gradient-to-br from-white via-indigo-50/20 to-blue-50/30 dark:from-[#111827] dark:to-[#1A2234]">
+    <div className="clean-card p-6 relative overflow-hidden flex flex-col justify-between h-full bg-gradient-to-br from-white via-indigo-50/20 to-blue-50/30 dark:from-[#111827] dark:via-[#161F36] dark:to-[#1A2234]">
       {/* Top Header with AI Insight pill and Bar Chart icon */}
       <div className="flex items-center justify-between mb-4 relative z-10">
         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#F3E8FF] dark:bg-purple-950/60 text-[#7C3AED] dark:text-purple-300">

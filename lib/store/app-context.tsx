@@ -137,7 +137,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
   ]);
 
-  // Sync theme with document element
+  // Restore saved theme from localStorage on initial load
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem("aiflow_theme") as "light" | "dark" | null;
+      if (savedTheme === "dark" || savedTheme === "light") {
+        setTheme(savedTheme);
+      }
+    } catch {}
+  }, []);
+
+  // Sync theme with document element and localStorage
   useEffect(() => {
     const root = document.documentElement;
     if (theme === "dark") {
@@ -145,6 +155,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } else {
       root.classList.remove("dark");
     }
+    try {
+      localStorage.setItem("aiflow_theme", theme);
+    } catch {}
   }, [theme]);
 
   // Global Ctrl+K / Cmd+K listener

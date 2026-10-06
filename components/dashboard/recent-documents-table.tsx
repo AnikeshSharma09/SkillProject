@@ -104,7 +104,7 @@ export function RecentDocumentsTable({
   };
 
   return (
-    <div className="rounded-2xl glass-surface dark:bg-[#0E1424]/90 border border-slate-200/80 dark:border-white/[0.08] shadow-lg overflow-hidden">
+    <div className="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-white/[0.08] shadow-sm overflow-hidden">
       {/* Table Header Strip */}
       <div className="p-5 border-b border-slate-100 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-black/20">
         <div>
