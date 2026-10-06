@@ -138,7 +138,7 @@ export default function AuditLogsPage() {
                       </Link>
                     )}
 
-                    <span>{formatTimeAgo(log.timestamp)}</span>
+                    <span suppressHydrationWarning>{formatTimeAgo(log.timestamp)}</span>
                   </div>
 
                   {/* Diff view if recorded */}

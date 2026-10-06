@@ -188,7 +188,10 @@ export function RecentDocumentsTable({
                 </td>
 
                 {/* Ingest Time */}
-                <td className="py-3.5 px-5 text-xs text-slate-400 font-mono">
+                <td
+                  className="py-3.5 px-5 text-xs text-slate-400 font-mono"
+                  suppressHydrationWarning
+                >
                   {formatTimeAgo(doc.uploadedAt)}
                 </td>
 

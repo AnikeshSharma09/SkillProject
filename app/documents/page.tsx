@@ -359,7 +359,10 @@ function DocumentsContent() {
                       {doc.createdBy?.fullName || "System"}
                     </td>
 
-                    <td className="py-3.5 px-5 text-xs text-slate-500 dark:text-slate-400">
+                    <td
+                      className="py-3.5 px-5 text-xs text-slate-500 dark:text-slate-400"
+                      suppressHydrationWarning
+                    >
                       {formatTimeAgo(doc.uploadedAt)}
                     </td>
 
@@ -452,7 +455,7 @@ function DocumentsContent() {
               </div>
 
               <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-400" suppressHydrationWarning>
                   {formatTimeAgo(doc.uploadedAt)}
                 </span>
                 <Link

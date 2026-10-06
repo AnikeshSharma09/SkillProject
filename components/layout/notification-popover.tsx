@@ -108,7 +108,10 @@ export function NotificationPopover() {
                       <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
                         {item.title}
                       </p>
-                      <span className="text-[10px] text-slate-400 shrink-0">
+                      <span
+                        className="text-[10px] text-slate-400 shrink-0"
+                        suppressHydrationWarning
+                      >
                         {formatTimeAgo(item.createdAt)}
                       </span>
                     </div>
