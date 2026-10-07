@@ -63,7 +63,7 @@ export function WorkflowCanvas({
       <div className="h-16 px-6 border-b border-slate-200 dark:border-white/[0.08] flex items-center justify-between bg-white dark:bg-[#111827]">
         <div className="flex items-center gap-3">
           <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-            Invoice Approval Workflow
+            {initialWorkflow?.name || "New Visual Workflow"}
           </h2>
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300">
             Draft

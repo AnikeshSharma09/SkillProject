@@ -55,31 +55,7 @@ export default function AssistantPage() {
     "Which vendors have unpaid invoices?",
   ];
 
-  // Pre-seed conversation with the exact QA exchange from the mockup
-  const [messages, setMessages] = useState<MessageItem[]>([
-    {
-      id: "msg-1",
-      sender: "user",
-      text: "Which invoices are above ₹50,000?",
-      timestamp: "10:42 AM",
-    },
-    {
-      id: "msg-2",
-      sender: "ai",
-      text: "There are 18 invoices above ₹50,000 awaiting approval.",
-      summaryStats: [
-        { label: "Total value", value: "₹32,40,000" },
-        { label: "Average amount", value: "₹1,80,000" },
-        { label: "Latest invoice", value: "INV-1048 (₹88,500)" },
-      ],
-      sources: [
-        { name: "INV-1024.pdf", amount: "₹72,500", id: "doc-inv-1024" },
-        { name: "INV-1031.pdf", amount: "₹1,25,000", id: "doc-inv-1031" },
-        { name: "INV-1048.pdf", amount: "₹88,500", id: "doc-inv-1048" },
-      ],
-      timestamp: "10:42 AM",
-    },
-  ]);
+  const [messages, setMessages] = useState<MessageItem[]>([]);
 
   const handleSendMessage = async (queryText?: string) => {
     const query = queryText || inputQuery;
@@ -103,17 +79,19 @@ export default function AssistantPage() {
 
     try {
       const ragResult = await queryDocumentRAG(query, documents);
+      const dynamicSources = ragResult.sources?.map((s) => ({
+        name: s.documentName,
+        amount: s.excerpt || "",
+        id: s.documentId,
+      })) || [];
+
       setMessages((prev) => [
         ...prev,
         {
           id: aiMsgId,
           sender: "ai",
           text: ragResult.answer,
-          sources: [
-            { name: "INV-1024.pdf", amount: "₹72,500", id: "doc-inv-1024" },
-            { name: "INV-1031.pdf", amount: "₹1,25,000", id: "doc-inv-1031" },
-            { name: "INV-1048.pdf", amount: "₹88,500", id: "doc-inv-1048" },
-          ],
+          sources: dynamicSources.length > 0 ? dynamicSources : undefined,
           timestamp: "Just now",
         },
       ]);
@@ -164,91 +142,105 @@ export default function AssistantPage() {
         ))}
       </div>
 
-      {/* Conversation Thread matching mockup */}
+      {/* Conversation Thread */}
       <div className="space-y-5 pt-3">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex flex-col ${
-              msg.sender === "user" ? "items-end" : "items-start"
-            }`}
-          >
-            {msg.sender === "user" ? (
-              <div className="max-w-md p-3.5 rounded-2xl rounded-tr-xs bg-blue-600 text-white text-xs sm:text-sm font-semibold shadow-xs">
-                {msg.text}
-              </div>
-            ) : (
-              <div className="w-full clean-card p-6 space-y-4">
-                <div className="flex items-center gap-2 border-b pb-3 border-slate-100 dark:border-slate-800">
-                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white">
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">
-                    AI-FLOW Intelligence
-                  </span>
-                </div>
-
-                {/* Text Body */}
-                <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
-                  {msg.text}
-                </p>
-
-                {/* Summary Bullet Points */}
-                {msg.summaryStats && (
-                  <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300 list-disc list-inside">
-                    {msg.summaryStats.map((s, idx) => (
-                      <li key={idx}>
-                        <strong className="text-slate-800 dark:text-white">{s.label}:</strong> {s.value}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {/* Source Documents Section matching mockup */}
-                {msg.sources && (
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                      Source Documents
-                    </span>
-
-                    {/* 3 Clickable Cards matching mockup */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {msg.sources.map((src, idx) => (
-                        <Link
-                          key={idx}
-                          href="/documents"
-                          className="p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] hover:border-blue-400 transition-colors flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <FileText className="w-4 h-4 text-blue-600 shrink-0" />
-                            <div className="min-w-0">
-                              <span className="text-xs font-bold text-slate-900 dark:text-white truncate block">
-                                {src.name}
-                              </span>
-                              <span className="text-[10px] text-slate-400 font-mono">
-                                {src.amount}
-                              </span>
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-
-                    <div className="pt-1">
-                      <Link
-                        href="/documents"
-                        className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1"
-                      >
-                        <span>View all 18 documents</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+        {messages.length === 0 ? (
+          <div className="clean-card p-10 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 mx-auto flex items-center justify-center">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              AI Assistant Ready
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              Ask questions about your uploaded documents, generate automated workflows, or query institutional data using RAG retrieval.
+            </p>
           </div>
-        ))}
+        ) : (
+          messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex flex-col ${
+                msg.sender === "user" ? "items-end" : "items-start"
+              }`}
+            >
+              {msg.sender === "user" ? (
+                <div className="max-w-md p-3.5 rounded-2xl rounded-tr-xs bg-blue-600 text-white text-xs sm:text-sm font-semibold shadow-xs">
+                  {msg.text}
+                </div>
+              ) : (
+                <div className="w-full clean-card p-6 space-y-4">
+                  <div className="flex items-center gap-2 border-b pb-3 border-slate-100 dark:border-slate-800">
+                    <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      AI-FLOW Intelligence
+                    </span>
+                  </div>
+
+                  {/* Text Body */}
+                  <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    {msg.text}
+                  </p>
+
+                  {/* Summary Bullet Points */}
+                  {msg.summaryStats && (
+                    <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300 list-disc list-inside">
+                      {msg.summaryStats.map((s, idx) => (
+                        <li key={idx}>
+                          <strong className="text-slate-800 dark:text-white">{s.label}:</strong> {s.value}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {/* Source Documents Section */}
+                  {msg.sources && (
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                        Source Documents
+                      </span>
+
+                      {/* Clickable Cards */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {msg.sources.map((src, idx) => (
+                          <Link
+                            key={idx}
+                            href="/documents"
+                            className="p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] hover:border-blue-400 transition-colors flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-slate-900 dark:text-white truncate block">
+                                  {src.name}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {src.amount}
+                                </span>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+
+                      <div className="pt-1">
+                        <Link
+                          href="/documents"
+                          className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1"
+                        >
+                          <span>View all {documents.length} documents</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Sticky Bottom Input Dock matching mockup */}

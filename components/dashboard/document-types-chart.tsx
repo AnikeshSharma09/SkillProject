@@ -1,16 +1,42 @@
 "use client";
 
 import React from "react";
+import { useApp } from "@/lib/store/app-context";
 
 export function DocumentTypesChart() {
-  const data = [
-    { label: "Invoice", percentage: 28, color: "#3B82F6" },
-    { label: "Leave Application", percentage: 18, color: "#06B6D4" },
-    { label: "Purchase Order", percentage: 15, color: "#F59E0B" },
-    { label: "Contract", percentage: 12, color: "#10B981" },
-    { label: "Resume", percentage: 10, color: "#8B5CF6" },
-    { label: "Other", percentage: 17, color: "#EC4899" },
-  ];
+  const { documents } = useApp();
+
+  const typeCounts: Record<string, number> = {};
+  documents.forEach((d) => {
+    typeCounts[d.documentType] = (typeCounts[d.documentType] || 0) + 1;
+  });
+
+  const colorMap: Record<string, string> = {
+    Invoice: "#3B82F6",
+    "Leave Application": "#06B6D4",
+    "Purchase Order": "#F59E0B",
+    Contract: "#10B981",
+    Resume: "#8B5CF6",
+    Other: "#EC4899",
+  };
+
+  const total = documents.length;
+  const categories = Object.keys(typeCounts);
+
+  const data =
+    total > 0
+      ? categories.map((cat) => ({
+          label: cat,
+          percentage: Math.round((typeCounts[cat] / total) * 100),
+          color: colorMap[cat] || "#94A3B8",
+        }))
+      : [
+          { label: "Invoice", percentage: 0, color: "#3B82F6" },
+          { label: "Leave Application", percentage: 0, color: "#06B6D4" },
+          { label: "Purchase Order", percentage: 0, color: "#F59E0B" },
+          { label: "Contract", percentage: 0, color: "#10B981" },
+          { label: "Other", percentage: 0, color: "#EC4899" },
+        ];
 
   // Calculate SVG stroke dashes for donut segments
   const radius = 55;
@@ -39,33 +65,34 @@ export function DocumentTypesChart() {
               strokeWidth="16"
               className="dark:stroke-slate-800"
             />
-            {data.map((item, idx) => {
-              const strokeDash = (item.percentage / 100) * circumference;
-              const strokeDashoffset = -accumulatedOffset;
-              accumulatedOffset += strokeDash;
+            {total > 0 &&
+              data.map((item, idx) => {
+                const strokeDash = (item.percentage / 100) * circumference;
+                const strokeDashoffset = -accumulatedOffset;
+                accumulatedOffset += strokeDash;
 
-              return (
-                <circle
-                  key={idx}
-                  cx="70"
-                  cy="70"
-                  r={radius}
-                  fill="transparent"
-                  stroke={item.color}
-                  strokeWidth="16"
-                  strokeDasharray={`${strokeDash} ${circumference}`}
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
-                  className="transition-all duration-500 hover:opacity-85"
-                />
-              );
-            })}
+                return (
+                  <circle
+                    key={idx}
+                    cx="70"
+                    cy="70"
+                    r={radius}
+                    fill="transparent"
+                    stroke={item.color}
+                    strokeWidth="16"
+                    strokeDasharray={`${strokeDash} ${circumference}`}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    className="transition-all duration-500 hover:opacity-85"
+                  />
+                );
+              })}
           </svg>
 
-          {/* Center Text: 2,481 Documents */}
+          {/* Center Text */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
             <span className="text-lg font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
-              2,481
+              {total.toLocaleString()}
             </span>
             <span className="text-[10px] text-slate-400 font-medium">
               Documents

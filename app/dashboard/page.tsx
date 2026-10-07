@@ -57,12 +57,12 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4 Metric Cards Row matching mockup */}
+      {/* 4 Metric Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Documents Processed"
-          value="2,481"
-          change="18.4%"
+          value={documents.length.toLocaleString()}
+          change={documents.length > 0 ? "18.4%" : "0.0%"}
           trend="up"
           trendType="positive"
           icon={FileText}
@@ -72,8 +72,8 @@ export default function DashboardPage() {
 
         <MetricCard
           title="Automation Rate"
-          value="91.4%"
-          change="6.2%"
+          value={documents.length > 0 ? "91.4%" : "0%"}
+          change={documents.length > 0 ? "6.2%" : "0%"}
           trend="up"
           trendType="positive"
           icon={Zap}
@@ -83,8 +83,8 @@ export default function DashboardPage() {
 
         <MetricCard
           title="Pending Approvals"
-          value={String(pendingApprovalsCount || 27)}
-          change="12.8%"
+          value={String(pendingApprovalsCount)}
+          change={pendingApprovalsCount > 0 ? "12.8%" : "0%"}
           trend="down"
           trendType="negative"
           icon={Clock}
@@ -94,8 +94,8 @@ export default function DashboardPage() {
 
         <MetricCard
           title="Avg Processing Time"
-          value="3.8s"
-          change="24.1%"
+          value={documents.length > 0 ? "3.8s" : "0.0s"}
+          change={documents.length > 0 ? "24.1%" : "0.0%"}
           trend="down"
           trendType="negative"
           icon={Timer}

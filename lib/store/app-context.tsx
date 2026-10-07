@@ -107,35 +107,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: "notif-1",
-      title: "Invoice Approval Required",
-      message: "Invoice INV-1024 (ABC Technologies) exceeds ₹50,000 threshold.",
-      type: "approval",
-      isRead: false,
-      documentId: "doc-inv-1024",
-      createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "notif-2",
-      title: "Human Review Flagged",
-      message: "Leave Request 203 has low confidence (64.2%). Verification needed.",
-      type: "review",
-      isRead: false,
-      documentId: "doc-leave-203",
-      createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "notif-3",
-      title: "Workflow Complete",
-      message: "Receipt #701 processed and archived automatically.",
-      type: "workflow",
-      isRead: true,
-      documentId: "doc-rec-701",
-      createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-    },
-  ]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   // Restore saved theme from localStorage on initial load
   useEffect(() => {

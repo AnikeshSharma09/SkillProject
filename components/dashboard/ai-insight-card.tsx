@@ -1,8 +1,14 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, BarChart2 } from "lucide-react";
+import { Sparkles, ArrowRight, BarChart2, UploadCloud } from "lucide-react";
+import { useApp } from "@/lib/store/app-context";
 
 export function AIInsightCard() {
+  const { documents } = useApp();
+  const isEmpty = documents.length === 0;
+
   return (
     <div className="clean-card p-6 relative overflow-hidden flex flex-col justify-between h-full bg-gradient-to-br from-white via-indigo-50/20 to-blue-50/30 dark:from-[#111827] dark:via-[#161F36] dark:to-[#1A2234]">
       {/* Top Header with AI Insight pill and Bar Chart icon */}
@@ -17,27 +23,49 @@ export function AIInsightCard() {
         </div>
       </div>
 
-      {/* Main Insight Text matching mockup */}
+      {/* Main Insight Text */}
       <div className="relative z-10 space-y-4 my-auto">
-        <p className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100 leading-snug">
-          Your workflows processed{" "}
-          <strong className="text-slate-900 dark:text-white font-extrabold">18% more documents</strong>{" "}
-          this week while reducing manual review by{" "}
-          <strong className="text-slate-900 dark:text-white font-extrabold">12%</strong>.
-        </p>
+        {isEmpty ? (
+          <>
+            <p className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100 leading-snug">
+              Workspace pipeline initialized and standby. Upload your first document to activate automated classification, extraction, and AI insights.
+            </p>
 
-        <div>
-          <Link
-            href="/analytics"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white btn-primary-gradient transition-all"
-          >
-            <span>View Analytics</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+            <div>
+              <Link
+                href="/documents"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white btn-primary-gradient transition-all"
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                <span>Upload Document</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100 leading-snug">
+              Your workflows processed{" "}
+              <strong className="text-slate-900 dark:text-white font-extrabold">
+                {documents.length} document{documents.length > 1 ? "s" : ""}
+              </strong>{" "}
+              with real-time automated OCR classification and rule routing.
+            </p>
+
+            <div>
+              <Link
+                href="/analytics"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white btn-primary-gradient transition-all"
+              >
+                <span>View Analytics</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Decorative Wave at Bottom Right matching mockup */}
+      {/* Decorative Wave at Bottom Right */}
       <div className="absolute -bottom-2 -right-4 w-64 h-28 pointer-events-none opacity-40 dark:opacity-20">
         <svg viewBox="0 0 200 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
           <path

@@ -226,11 +226,33 @@ export default function WorkflowsPage() {
               </thead>
 
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {workflows.map((wf) => (
-                  <tr
-                    key={wf.id}
-                    className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
-                  >
+                {workflows.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <GitFork className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          No custom workflows created yet
+                        </p>
+                        <p className="text-xs text-slate-400 max-w-sm">
+                          Use the AI Workflow Synthesizer or pick an Industry Preset above to generate your first automated pipeline.
+                        </p>
+                        <button
+                          onClick={() => setIsGeneratorModalOpen(true)}
+                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Generate Workflow with AI</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  workflows.map((wf) => (
+                    <tr
+                      key={wf.id}
+                      className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
+                    >
                     <td className="py-3.5 px-5">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 border border-purple-100 dark:border-purple-900/60 flex items-center justify-center shrink-0 text-purple-600 dark:text-purple-400">
@@ -292,7 +314,7 @@ export default function WorkflowsPage() {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>

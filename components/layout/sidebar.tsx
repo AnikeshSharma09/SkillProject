@@ -59,7 +59,7 @@ export function Sidebar() {
       name: "Approvals",
       href: "/approvals",
       icon: CheckCircle2,
-      badge: pendingApprovalsCount || 27,
+      badge: pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined,
       badgeVariant: "red",
     },
     { name: "Tasks", href: "/tasks", icon: CheckSquare },

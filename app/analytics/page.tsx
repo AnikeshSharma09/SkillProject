@@ -27,8 +27,10 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { MetricCard } from "@/components/dashboard/metric-card";
+import { useApp } from "@/lib/store/app-context";
 
 export default function AnalyticsPage() {
+  const { documents } = useApp();
   const volumeData = [
     { day: "Mon", documents: 320, automated: 295 },
     { day: "Tue", documents: 410, automated: 380 },
@@ -82,17 +84,17 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Documents Processed"
-          value="2,481"
-          change="18.4%"
+          value={documents.length.toLocaleString()}
+          change={documents.length > 0 ? "18.4%" : "0.0%"}
           trend="up"
           icon={FileText}
-          description="Total documents this month"
+          description="Total documents in pipeline"
         />
 
         <MetricCard
           title="Automation Rate"
-          value="91.4%"
-          change="6.2%"
+          value={documents.length > 0 ? "91.4%" : "0%"}
+          change={documents.length > 0 ? "6.2%" : "0%"}
           trend="up"
           icon={Zap}
           description="Straight-through zero touch"
@@ -100,8 +102,8 @@ export default function AnalyticsPage() {
 
         <MetricCard
           title="Human Review Rate"
-          value="8.6%"
-          change="12.0%"
+          value={documents.length > 0 ? "8.6%" : "0%"}
+          change={documents.length > 0 ? "12.0%" : "0%"}
           trend="down"
           trendType="positive"
           icon={CheckCircle2}
@@ -110,8 +112,8 @@ export default function AnalyticsPage() {
 
         <MetricCard
           title="Avg. Processing Time"
-          value="3.8s"
-          change="24.1%"
+          value={documents.length > 0 ? "3.8s" : "0.0s"}
+          change={documents.length > 0 ? "24.1%" : "0.0%"}
           trend="down"
           trendType="positive"
           icon={Clock}

@@ -91,72 +91,86 @@ export default function AuditLogsPage() {
 
       {/* Timeline (Section 37) */}
       <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs p-6 sm:p-8 space-y-6">
-        <div className="relative border-l-2 border-slate-100 dark:border-slate-800 ml-3 space-y-8">
-          {filteredLogs.map((log) => {
-            const timeStr = new Date(log.timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
+        {filteredLogs.length === 0 ? (
+          <div className="py-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+              <History className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              No audit logs recorded yet
+            </h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Immutable audit events will automatically be appended here as documents are ingested, OCR processed, approved, or archived.
+            </p>
+          </div>
+        ) : (
+          <div className="relative border-l-2 border-slate-100 dark:border-slate-800 ml-3 space-y-8">
+            {filteredLogs.map((log) => {
+              const timeStr = new Date(log.timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
 
-            return (
-              <div key={log.id} className="relative pl-7 group">
-                {/* Node icon dot */}
-                <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-2xs group-hover:scale-110 transition-transform">
-                  {getActionIcon(log.action)}
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-                      {timeStr}
-                    </span>
-                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                      {log.action.replace(/_/g, " ")}
-                    </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                      {log.entityType}
-                    </span>
+              return (
+                <div key={log.id} className="relative pl-7 group">
+                  {/* Node icon dot */}
+                  <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-2xs group-hover:scale-110 transition-transform">
+                    {getActionIcon(log.action)}
                   </div>
 
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    {log.detail}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <User className="w-3 h-3 text-slate-400" />
-                      <strong>{log.actor.name}</strong> ({log.actor.role})
-                    </span>
-
-                    {log.documentName && log.documentId && (
-                      <Link
-                        href={`/documents/${log.documentId}`}
-                        className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
-                      >
-                        <FileText className="w-3 h-3" />
-                        <span>{log.documentName}</span>
-                      </Link>
-                    )}
-
-                    <span suppressHydrationWarning>{formatTimeAgo(log.timestamp)}</span>
-                  </div>
-
-                  {/* Diff view if recorded */}
-                  {log.diff && (
-                    <div className="mt-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-700 dark:text-slate-300">
-                      <span className="text-slate-400 font-semibold uppercase text-[10px] block mb-1">
-                        State Transition Diff:
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+                        {timeStr}
                       </span>
-                      <pre className="overflow-x-auto">
-                        {JSON.stringify(log.diff, null, 2)}
-                      </pre>
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                        {log.action.replace(/_/g, " ")}
+                      </span>
+                      <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                        {log.entityType}
+                      </span>
                     </div>
-                  )}
+
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      {log.detail}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3 text-slate-400" />
+                        <strong>{log.actor.name}</strong> ({log.actor.role})
+                      </span>
+
+                      {log.documentName && log.documentId && (
+                        <Link
+                          href={`/documents/${log.documentId}`}
+                          className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
+                        >
+                          <FileText className="w-3 h-3" />
+                          <span>{log.documentName}</span>
+                        </Link>
+                      )}
+
+                      <span suppressHydrationWarning>{formatTimeAgo(log.timestamp)}</span>
+                    </div>
+
+                    {/* Diff view if recorded */}
+                    {log.diff && (
+                      <div className="mt-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-700 dark:text-slate-300">
+                        <span className="text-slate-400 font-semibold uppercase text-[10px] block mb-1">
+                          State Transition Diff:
+                        </span>
+                        <pre className="overflow-x-auto">
+                          {JSON.stringify(log.diff, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

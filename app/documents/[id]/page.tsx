@@ -39,7 +39,7 @@ export default function DocumentDetailPage({
   const router = useRouter();
   const { documents, updateDocumentField, updateDocument, logAudit } = useApp();
 
-  const doc = documents.find((d) => d.id === resolvedParams.id) || documents[0];
+  const doc = documents.find((d) => d.id === resolvedParams.id);
   const [activeTab, setActiveTab] = useState<"data" | "workflow" | "history" | "comments">("data");
   const [activePage, setActivePage] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(100);

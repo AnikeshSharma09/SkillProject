@@ -145,7 +145,29 @@ export function RecentDocumentsTable({
           </thead>
 
           <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04]">
-            {documents.slice(0, 6).map((doc) => (
+            {documents.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-12 text-center">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <FileText className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      No documents in pipeline yet
+                    </p>
+                    <p className="text-xs text-slate-400 max-w-sm">
+                      Upload your first document to trigger AI classification, OCR extraction, and rule automation.
+                    </p>
+                    <Link
+                      href="/documents"
+                      className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                    >
+                      <span>Upload Documents</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              documents.slice(0, 6).map((doc) => (
               <tr
                 key={doc.id}
                 className="group hover:bg-slate-50/70 dark:hover:bg-white/[0.03] transition-colors"
@@ -206,7 +228,7 @@ export function RecentDocumentsTable({
                   </Link>
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
       </div>
