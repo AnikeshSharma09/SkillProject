@@ -18,8 +18,10 @@ import { formatTimeAgo, formatBytes } from "@/lib/utils";
 
 export function RecentDocumentsTable({
   documents,
+  onUploadClick,
 }: {
   documents: DocumentItem[];
+  onUploadClick?: () => void;
 }) {
   const getStatusBadge = (status: DocumentItem["status"]) => {
     switch (status) {
@@ -156,13 +158,24 @@ export function RecentDocumentsTable({
                     <p className="text-xs text-slate-400 max-w-sm">
                       Upload your first document to trigger AI classification, OCR extraction, and rule automation.
                     </p>
-                    <Link
-                      href="/documents"
-                      className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-                    >
-                      <span>Upload Documents</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                    {onUploadClick ? (
+                      <button
+                        type="button"
+                        onClick={onUploadClick}
+                        className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
+                      >
+                        <span>Upload Documents</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <Link
+                        href="/documents?action=upload"
+                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                      >
+                        <span>Upload Documents</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    )}
                   </div>
                 </td>
               </tr>

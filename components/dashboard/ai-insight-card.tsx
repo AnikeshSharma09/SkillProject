@@ -5,7 +5,11 @@ import Link from "next/link";
 import { Sparkles, ArrowRight, BarChart2, UploadCloud } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
 
-export function AIInsightCard() {
+export interface AIInsightCardProps {
+  onUploadClick?: () => void;
+}
+
+export function AIInsightCard({ onUploadClick }: AIInsightCardProps = {}) {
   const { documents } = useApp();
   const isEmpty = documents.length === 0;
 
@@ -32,14 +36,26 @@ export function AIInsightCard() {
             </p>
 
             <div>
-              <Link
-                href="/documents"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white btn-primary-gradient transition-all"
-              >
-                <UploadCloud className="w-3.5 h-3.5" />
-                <span>Upload Document</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              {onUploadClick ? (
+                <button
+                  type="button"
+                  onClick={onUploadClick}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white btn-primary-gradient transition-all cursor-pointer shadow-md hover:shadow-lg"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Upload Document</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <Link
+                  href="/documents?action=upload"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white btn-primary-gradient transition-all"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Upload Document</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              )}
             </div>
           </>
         ) : (

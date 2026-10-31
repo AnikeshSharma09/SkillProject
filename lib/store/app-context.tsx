@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   DocumentItem,
   ApprovalTask,
@@ -19,7 +19,11 @@ import {
   INITIAL_WORKFLOWS,
   INITIAL_AUDIT_LOGS,
   INITIAL_RULES,
+  SAMPLE_DOCUMENTS,
+  SAMPLE_APPROVALS,
+  SAMPLE_AUDIT_LOGS,
 } from "./demo-data";
+
 export {
   DEMO_USERS,
   INITIAL_DOCUMENTS,
@@ -27,6 +31,9 @@ export {
   INITIAL_WORKFLOWS,
   INITIAL_AUDIT_LOGS,
   INITIAL_RULES,
+  SAMPLE_DOCUMENTS,
+  SAMPLE_APPROVALS,
+  SAMPLE_AUDIT_LOGS,
 };
 
 interface AppContextType {
@@ -69,6 +76,7 @@ interface AppContextType {
   deleteDocument: (id: string) => void;
   archiveDocument: (id: string) => void;
   // Approval Operations
+  addApproval: (approval: ApprovalTask) => void;
   approveTask: (id: string, comment?: string) => void;
   rejectTask: (id: string, comment: string) => void;
   // Workflow Operations
@@ -88,35 +96,105 @@ interface AppContextType {
     detail: string,
     metadata?: { documentId?: string; documentName?: string; diff?: any }
   ) => void;
+  // Demo Data & Reset Helpers
+  seedDemoData: () => void;
+  resetAllData: () => void;
+  isHydrated: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>(DEMO_USERS);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(DEMO_USERS[0]); // Sarah Chen (ADMIN)
+  const [currentUser, setCurrentUser] = useState<UserProfile>(DEMO_USERS[0]); // Anikesh Sharma (ADMIN)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
 
   const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
   const [approvals, setApprovals] = useState<ApprovalTask[]>(INITIAL_APPROVALS);
-  const [workflows, setWorkflows] =
-    useState<WorkflowDefinition[]>(INITIAL_WORKFLOWS);
+  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>(INITIAL_WORKFLOWS);
   const [rules, setRules] = useState<RuleDefinition[]>(INITIAL_RULES);
-  const [auditLogs, setAuditLogs] =
-    useState<AuditLogItem[]>(INITIAL_AUDIT_LOGS);
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>(INITIAL_AUDIT_LOGS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-
-  // Restore saved theme from localStorage on initial load
+  // Restore saved state from localStorage on client initial load
   useEffect(() => {
     try {
+      // 1. Theme
       const savedTheme = localStorage.getItem("aiflow_theme") as "light" | "dark" | null;
       if (savedTheme === "dark" || savedTheme === "light") {
         setTheme(savedTheme);
       }
-    } catch {}
+
+      // 2. Documents
+      const savedDocs = localStorage.getItem("aiflow_documents");
+      if (savedDocs) {
+        const parsed = JSON.parse(savedDocs);
+        if (Array.isArray(parsed)) {
+          setDocuments(parsed);
+        }
+      }
+
+      // 3. Approvals
+      const savedApprovals = localStorage.getItem("aiflow_approvals");
+      if (savedApprovals) {
+        const parsed = JSON.parse(savedApprovals);
+        if (Array.isArray(parsed)) {
+          setApprovals(parsed);
+        }
+      }
+
+      // 4. Workflows
+      const savedWorkflows = localStorage.getItem("aiflow_workflows");
+      if (savedWorkflows) {
+        const parsed = JSON.parse(savedWorkflows);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setWorkflows(parsed);
+        }
+      }
+
+      // 5. Audit Logs
+      const savedLogs = localStorage.getItem("aiflow_audit_logs");
+      if (savedLogs) {
+        const parsed = JSON.parse(savedLogs);
+        if (Array.isArray(parsed)) {
+          setAuditLogs(parsed);
+        }
+      }
+
+      // 6. Notifications
+      const savedNotifs = localStorage.getItem("aiflow_notifications");
+      if (savedNotifs) {
+        const parsed = JSON.parse(savedNotifs);
+        if (Array.isArray(parsed)) {
+          setNotifications(parsed);
+        }
+      }
+
+      // 7. Users & Auth
+      const savedUser = localStorage.getItem("aiflow_current_user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed && parsed.id) setCurrentUser(parsed);
+      }
+
+      const savedUsers = localStorage.getItem("aiflow_available_users");
+      if (savedUsers) {
+        const parsed = JSON.parse(savedUsers);
+        if (Array.isArray(parsed) && parsed.length > 0) setAvailableUsers(parsed);
+      }
+
+      const savedAuth = localStorage.getItem("aiflow_is_auth");
+      if (savedAuth !== null) {
+        setIsAuthenticated(savedAuth === "true");
+      }
+    } catch (e) {
+      console.warn("Failed loading state from localStorage:", e);
+    } finally {
+      setIsHydrated(true);
+    }
   }, []);
 
   // Sync theme with document element and localStorage
@@ -131,6 +209,94 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("aiflow_theme", theme);
     } catch {}
   }, [theme]);
+
+  // Persist Documents to localStorage
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem("aiflow_documents", JSON.stringify(documents));
+    } catch (e) {
+      console.warn("Error persisting documents:", e);
+    }
+  }, [documents, isHydrated]);
+
+  // Persist Approvals to localStorage
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem("aiflow_approvals", JSON.stringify(approvals));
+    } catch (e) {
+      console.warn("Error persisting approvals:", e);
+    }
+  }, [approvals, isHydrated]);
+
+  // Persist Workflows to localStorage
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem("aiflow_workflows", JSON.stringify(workflows));
+    } catch (e) {
+      console.warn("Error persisting workflows:", e);
+    }
+  }, [workflows, isHydrated]);
+
+  // Persist Audit Logs to localStorage
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem("aiflow_audit_logs", JSON.stringify(auditLogs));
+    } catch (e) {
+      console.warn("Error persisting audit logs:", e);
+    }
+  }, [auditLogs, isHydrated]);
+
+  // Persist Notifications to localStorage
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem("aiflow_notifications", JSON.stringify(notifications));
+    } catch (e) {
+      console.warn("Error persisting notifications:", e);
+    }
+  }, [notifications, isHydrated]);
+
+  // Persist Users & Auth to localStorage
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem("aiflow_current_user", JSON.stringify(currentUser));
+      localStorage.setItem("aiflow_available_users", JSON.stringify(availableUsers));
+      localStorage.setItem("aiflow_is_auth", String(isAuthenticated));
+    } catch (e) {
+      console.warn("Error persisting users/auth:", e);
+    }
+  }, [currentUser, availableUsers, isAuthenticated, isHydrated]);
+
+  // Listen to cross-tab storage events for multi-tab sync
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!e.newValue) return;
+      try {
+        if (e.key === "aiflow_documents") {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setDocuments(parsed);
+        } else if (e.key === "aiflow_approvals") {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setApprovals(parsed);
+        } else if (e.key === "aiflow_audit_logs") {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setAuditLogs(parsed);
+        } else if (e.key === "aiflow_notifications") {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setNotifications(parsed);
+        }
+      } catch (err) {
+        console.warn("Error syncing cross-tab storage:", err);
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   // Global Ctrl+K / Cmd+K listener
   useEffect(() => {
@@ -148,7 +314,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
-  const logAudit = (
+  const logAudit = useCallback((
     action: string,
     entityType: AuditLogItem["entityType"],
     detail: string,
@@ -171,7 +337,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       diff: metadata?.diff,
     };
     setAuditLogs((prev) => [newLog, ...prev]);
-  };
+  }, [currentUser]);
 
   // Authentication: Login function
   const login = async (
@@ -313,6 +479,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       documentId: doc.id,
       documentName: doc.name,
     });
+    addNotification({
+      title: "Document Ingested",
+      message: `"${doc.name}" processed (${doc.documentType}, ${(doc.overallConfidence * 100).toFixed(0)}% confidence).`,
+      type: "workflow",
+      documentId: doc.id,
+    });
   };
 
   const updateDocument = (id: string, updates: Partial<DocumentItem>) => {
@@ -391,6 +563,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       documentId: id,
       documentName: doc?.name,
     });
+  };
+
+  const addApproval = (approval: ApprovalTask) => {
+    setApprovals((prev) => [approval, ...prev]);
   };
 
   const approveTask = (id: string, comment = "Approved as verified") => {
@@ -508,6 +684,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
+  // Helper to load sample demo data with 1-click
+  const seedDemoData = () => {
+    setDocuments(SAMPLE_DOCUMENTS);
+    setApprovals(SAMPLE_APPROVALS);
+    setAuditLogs(SAMPLE_AUDIT_LOGS);
+    addNotification({
+      title: "Demo Dataset Seeded",
+      message: `Loaded ${SAMPLE_DOCUMENTS.length} sample enterprise documents and approval flows.`,
+      type: "system",
+    });
+    logAudit("DEMO_SEEDED", "SYSTEM", "Loaded sample documents and approval tasks for evaluation.");
+  };
+
+  // Helper to clear all data back to blank slate
+  const resetAllData = () => {
+    setDocuments([]);
+    setApprovals([]);
+    setAuditLogs([]);
+    setNotifications([]);
+    try {
+      localStorage.removeItem("aiflow_documents");
+      localStorage.removeItem("aiflow_approvals");
+      localStorage.removeItem("aiflow_audit_logs");
+      localStorage.removeItem("aiflow_notifications");
+    } catch {}
+    addNotification({
+      title: "Workspace Cleared",
+      message: "Reset all data to clean blank slate (0 documents).",
+      type: "system",
+    });
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -533,6 +741,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateDocumentField,
         deleteDocument,
         archiveDocument,
+        addApproval,
         approveTask,
         rejectTask,
         addWorkflow,
@@ -542,6 +751,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         markAllNotificationsAsRead,
         addNotification,
         logAudit,
+        seedDemoData,
+        resetAllData,
+        isHydrated,
       }}
     >
       {children}

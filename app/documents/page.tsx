@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -40,6 +40,12 @@ function DocumentsContent() {
   } = useApp();
 
   const [isUploadOpen, setIsUploadOpen] = useState(initialUploadOpen);
+
+  useEffect(() => {
+    if (searchParams.get("action") === "upload") {
+      setIsUploadOpen(true);
+    }
+  }, [searchParams]);
   const [search, setSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedType, setSelectedType] = useState<string>("ALL");

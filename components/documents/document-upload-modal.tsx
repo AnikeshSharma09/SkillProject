@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   UploadCloud,
   FileText,
@@ -12,11 +13,14 @@ import {
   ArrowRight,
   ShieldCheck,
   Cpu,
+  ExternalLink,
+  Eye,
+  LayoutDashboard,
 } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
 import { processDocumentContent } from "@/lib/ai/document-processor";
 import { evaluateRules } from "@/lib/rules/rule-evaluator";
-import { DocumentItem } from "@/types";
+import { DocumentItem, ApprovalTask } from "@/types";
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -29,11 +33,12 @@ export function DocumentUploadModal({
   onClose,
   onSuccess,
 }: DocumentUploadModalProps) {
+  const router = useRouter();
   const {
     currentUser,
     addDocument,
     rules,
-    approvals,
+    addApproval,
     logAudit,
     addNotification,
   } = useApp();
@@ -49,6 +54,12 @@ export function DocumentUploadModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    if (isProcessing) return;
+    handleReset();
+    onClose();
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -86,26 +97,42 @@ export function DocumentUploadModal({
     setProgress(15);
     setCurrentStep("1. Storing document & computing SHA-256 hash...");
 
-    await new Promise((r) => setTimeout(r, 450));
+    // Read real text content if file is text/csv/json/markdown
+    let extractedText = "";
+    try {
+      if (
+        file.type.startsWith("text/") ||
+        file.name.endsWith(".txt") ||
+        file.name.endsWith(".csv") ||
+        file.name.endsWith(".json") ||
+        file.name.endsWith(".md")
+      ) {
+        extractedText = await file.text();
+      }
+    } catch (err) {
+      console.warn("Could not read text content directly from file:", err);
+    }
+
+    await new Promise((r) => setTimeout(r, 400));
     setProgress(35);
     setCurrentStep("2. Executing OCR & native text extraction...");
 
-    await new Promise((r) => setTimeout(r, 550));
+    await new Promise((r) => setTimeout(r, 450));
     setProgress(55);
     setCurrentStep("3. AI Classifying document taxonomy...");
 
     // Run actual processing & extraction engine
-    const result = await processDocumentContent(file.name);
+    const result = await processDocumentContent(file.name, extractedText);
 
     setProgress(75);
     setCurrentStep("4. Extracting structured entities & bounding boxes...");
 
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 350));
     setProgress(90);
     setCurrentStep("5. Calculating field & composite confidence scores...");
 
     const newDoc: DocumentItem = {
-      id: `doc-${Date.now()}`,
+      id: `doc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       organizationId: currentUser.organizationId,
       name: file.name,
       filePath: `/documents/${file.name}`,
@@ -131,7 +158,7 @@ export function DocumentUploadModal({
 
     // Step 6: Deterministic Rule Engine Evaluation
     setCurrentStep("6. Evaluating deterministic business rules...");
-    await new Promise((r) => setTimeout(r, 350));
+    await new Promise((r) => setTimeout(r, 300));
     setProgress(100);
 
     const ruleEvaluations = evaluateRules(newDoc, rules);
@@ -139,10 +166,10 @@ export function DocumentUploadModal({
 
     if (triggered && triggered.actionTriggered?.generatedApproval) {
       setTriggeredRuleNotice(triggered.actionTriggered.description);
-      // Spawn approval task
-      approvals.unshift(triggered.actionTriggered.generatedApproval as any);
+      // Spawn approval task via clean state update
+      addApproval(triggered.actionTriggered.generatedApproval as ApprovalTask);
       addNotification({
-        title: "Rule-Triggered Approval Task",
+        title: "Approval Task Generated",
         message: `${triggered.actionTriggered.description}. Action required.`,
         type: "approval",
         documentId: newDoc.id,
@@ -165,14 +192,24 @@ export function DocumentUploadModal({
     setTriggeredRuleNotice(null);
   };
 
+  const handleViewStudio = () => {
+    if (!completedDoc) return;
+    const docId = completedDoc.id;
+    handleClose();
+    router.push(`/documents/${docId}`);
+  };
+
+  const handleViewDashboard = () => {
+    handleClose();
+    router.push("/dashboard");
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
-        onClick={() => {
-          if (!isProcessing) onClose();
-        }}
+        onClick={handleClose}
       />
 
       {/* Modal Dialog */}
@@ -194,7 +231,7 @@ export function DocumentUploadModal({
 
           {!isProcessing && (
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -218,7 +255,7 @@ export function DocumentUploadModal({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.docx,.xlsx,.csv,.png,.jpg,.jpeg,.txt"
+              accept=".pdf,.docx,.xlsx,.csv,.png,.jpg,.jpeg,.txt,.json,.md"
               onChange={handleFileChange}
               className="hidden"
             />
@@ -237,7 +274,7 @@ export function DocumentUploadModal({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="mt-5 px-5 py-2.5 rounded-xl text-xs font-bold bg-white dark:bg-white/[0.08] border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/[0.12] text-slate-800 dark:text-white shadow-sm transition-all active:scale-95 cursor-pointer"
+              className="mt-5 px-5 py-2.5 rounded-xl text-xs font-bold bg-white dark:bg-white/[0.08] border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/[0.12] text-slate-800 dark:text-white shadow-xs transition-all active:scale-95 cursor-pointer"
             >
               Browse Local Files
             </button>
@@ -249,16 +286,16 @@ export function DocumentUploadModal({
               </span>
               <div className="flex flex-wrap justify-center gap-2">
                 {[
-                  { name: "Invoice_INV1024.pdf", label: "Invoice (₹72.5k)" },
-                  { name: "Leave_Request_203.pdf", label: "Leave Form (Low Conf)" },
-                  { name: "PO_9921_Workstations.pdf", label: "Purchase Order" },
-                  { name: "Hospital_Claim_Discharge.pdf", label: "Medical Form" },
+                  { name: "Invoice_INV1024.pdf", label: "Invoice (₹72.5k Approval Gate)" },
+                  { name: "Leave_Request_203.pdf", label: "Leave Form (Low Confidence)" },
+                  { name: "PO_9921_Workstations.pdf", label: "Purchase Order (₹6.25L)" },
+                  { name: "Hospital_Claim_Discharge.pdf", label: "Medical Discharge Form" },
                 ].map((sample) => (
                   <button
                     key={sample.name}
                     type="button"
                     onClick={() => {
-                      const mockFile = new File(["dummy content"], sample.name, {
+                      const mockFile = new File(["sample simulated document content"], sample.name, {
                         type: "application/pdf",
                       });
                       handleFileSelected(mockFile);
@@ -319,6 +356,9 @@ export function DocumentUploadModal({
                   </strong>{" "}
                   confidence.
                 </p>
+                <p className="text-[11px] text-slate-400 mt-1 font-mono">
+                  Document ID: {completedDoc.id} • {completedDoc.extractedFields?.length || 0} fields extracted
+                </p>
               </div>
             </div>
 
@@ -332,22 +372,35 @@ export function DocumentUploadModal({
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
               <button
                 type="button"
                 onClick={handleReset}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 Upload Another
               </button>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all cursor-pointer"
-              >
-                Done
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleViewDashboard}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors cursor-pointer"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>Dashboard</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleViewStudio}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Open Studio</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         )}

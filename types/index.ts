@@ -76,6 +76,7 @@ export interface ExtractedField {
   isCorrected?: boolean;
   correctedValue?: string;
   correctionHistory?: FieldCorrectionHistory[];
+  validationStatus?: 'VALID' | 'WARNING' | 'ERROR' | string;
 }
 
 export interface DocumentItem {
@@ -238,7 +239,7 @@ export interface AuditLogItem {
   documentId?: string;
   documentName?: string;
   action: string;
-  entityType: 'DOCUMENT' | 'WORKFLOW' | 'APPROVAL' | 'RULE' | 'USER' | 'INTEGRATION';
+  entityType: 'DOCUMENT' | 'WORKFLOW' | 'APPROVAL' | 'RULE' | 'USER' | 'INTEGRATION' | 'SYSTEM';
   detail: string;
   diff?: {
     oldValue?: unknown;

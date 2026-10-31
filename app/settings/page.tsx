@@ -11,18 +11,41 @@ import {
   UserPlus,
   Users,
   Save,
+  Database,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
 
 export default function SettingsPage() {
-  const { currentUser, availableUsers, setCurrentUser } = useApp();
+  const {
+    currentUser,
+    availableUsers,
+    setCurrentUser,
+    seedDemoData,
+    resetAllData,
+    documents,
+  } = useApp();
 
   const [confidenceThreshold, setConfidenceThreshold] = useState(70);
   const [autoApprovalThreshold, setAutoApprovalThreshold] = useState(90);
   const [copiedKey, setCopiedKey] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [dataMessage, setDataMessage] = useState<string | null>(null);
 
   const mockApiKey = "ak_live_a1f79bc8429188e99120489";
+
+  const handleSeed = () => {
+    seedDemoData();
+    setDataMessage("Sample enterprise dataset loaded successfully! (5 documents, 2 approvals)");
+    setTimeout(() => setDataMessage(null), 3500);
+  };
+
+  const handleReset = () => {
+    resetAllData();
+    setDataMessage("Workspace cleared to 0 documents and clean slate.");
+    setTimeout(() => setDataMessage(null), 3500);
+  };
 
   const handleCopyKey = () => {
     navigator.clipboard.writeText(mockApiKey);
@@ -211,6 +234,63 @@ export default function SettingsPage() {
               <Copy className="w-4 h-4" />
             )}
           </button>
+        </div>
+      </div>
+
+      {/* Section 4: Workspace State & Sample Datasets */}
+      <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs p-6 sm:p-8 space-y-4">
+        <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <Database className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              Workspace State & Demo Data
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Manage your local workspace persistence, test datasets, and blank slate resets
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4 max-w-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60">
+            <div>
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Current Workspace Count
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {documents.length} document{documents.length === 1 ? "" : "s"} currently saved and persisted in browser storage.
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSeed}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Load Sample Data</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleReset}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Clear All (Reset)</span>
+              </button>
+            </div>
+          </div>
+
+          {dataMessage && (
+            <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-500" />
+              <span>{dataMessage}</span>
+            </div>
+          )}
         </div>
       </div>
 
