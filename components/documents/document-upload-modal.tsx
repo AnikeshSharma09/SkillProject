@@ -131,6 +131,20 @@ export function DocumentUploadModal({
     setProgress(90);
     setCurrentStep("5. Calculating field & composite confidence scores...");
 
+    // Generate preview URL if it's an image or PDF
+    let previewUrl: string | undefined = undefined;
+    if (
+      file.type.startsWith("image/") ||
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf")
+    ) {
+      try {
+        previewUrl = URL.createObjectURL(file);
+      } catch (err) {
+        console.warn("Could not create object URL for preview:", err);
+      }
+    }
+
     const newDoc: DocumentItem = {
       id: `doc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       organizationId: currentUser.organizationId,
@@ -145,6 +159,7 @@ export function DocumentUploadModal({
       overallConfidence: result.overallConfidence,
       rawOcrText: result.rawOcrText,
       pageCount: 1,
+      previewUrl,
       extractedFields: result.extractedFields,
       isArchived: false,
       uploadedAt: new Date().toISOString(),

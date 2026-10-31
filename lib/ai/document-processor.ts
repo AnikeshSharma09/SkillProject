@@ -25,7 +25,28 @@ export async function processDocumentContent(
   let detectedType: DocumentCategory = "Other";
   let classConfidence = 0.95;
 
-  if (lowerName.includes("inv") || lowerName.includes("bill") || lowerName.includes("tax")) {
+  // Exact taxonomy classifier (avoid partial substring collisions like "report" matching "po")
+  if (
+    lowerName.includes("report") ||
+    lowerName.includes("weekly") ||
+    lowerName.includes("summary") ||
+    lowerName.includes("analysis") ||
+    lowerName.includes("audit") ||
+    lowerName.includes("status") ||
+    lowerName.includes("loadgen")
+  ) {
+    detectedType = "Report";
+    classConfidence = 0.96;
+    if (!text) {
+      const cleanTitle = fileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+      text = `STATUS & PERFORMANCE REPORT\nTitle: ${cleanTitle}\nProject / System: Enterprise Automation & AI Pipeline\nReporting Period: Q3-Q4 Execution Cycle\nStatus: Operational & Validated\nPrepared By: Platform Operations & Engineering\nDepartment: Systems Architecture\nKey Findings: Ingestion throughput benchmarked at 3.2s average latency. Deterministic rule evaluation completed across all pipeline segments with 100% precision.`;
+    }
+  } else if (
+    lowerName.includes("inv") ||
+    lowerName.includes("bill") ||
+    lowerName.includes("tax") ||
+    lowerName.includes("invoice")
+  ) {
     detectedType = "Invoice";
     classConfidence = 0.985;
     if (!text) {
@@ -33,17 +54,26 @@ export async function processDocumentContent(
         1000 + Math.random() * 9000
       )}\nDate: 2026-09-24\nDue Date: 2026-10-04\nDescription: Enterprise Cloud Migration Support\nSubtotal: INR 65,000.00\nGST (18%): INR 11,700.00\nTotal Payable: INR 76,700.00\nPayment Terms: Net 10 Days`;
     }
-  } else if (lowerName.includes("leave") || lowerName.includes("vacation") || lowerName.includes("pto")) {
-    detectedType = "Leave Application";
-    classConfidence = 0.94;
-    if (!text) {
-      text = `EMPLOYEE LEAVE REQUEST FORM\nEmployee: Vikram Patel (EMP-408)\nDepartment: Product Engineering\nLeave Category: Sick Leave\nPeriod: 2026-10-02 to 2026-10-05 (4 Days)\nHandover: Elena Rostova covering urgent incidents.\nPhysician note attached.`;
-    }
-  } else if (lowerName.includes("po") || lowerName.includes("purchase")) {
+  } else if (
+    lowerName.includes("purchase") ||
+    /(?:^|[_\W])po(?:[_\W]|$)/i.test(lowerName) ||
+    lowerName.startsWith("po-") ||
+    lowerName.startsWith("po_")
+  ) {
     detectedType = "Purchase Order";
     classConfidence = 0.97;
     if (!text) {
       text = `PURCHASE ORDER: PO-9921\nBuyer: Apex Global Enterprises\nSupplier: Lenovo Global Technology\nItems: 5x ThinkPad P16 Mobile Workstations\nTotal Authorized: INR 6,25,000.00\nRequired Delivery: 2026-10-15`;
+    }
+  } else if (
+    lowerName.includes("leave") ||
+    lowerName.includes("vacation") ||
+    lowerName.includes("pto")
+  ) {
+    detectedType = "Leave Application";
+    classConfidence = 0.94;
+    if (!text) {
+      text = `EMPLOYEE LEAVE REQUEST FORM\nEmployee: Vikram Patel (EMP-408)\nDepartment: Product Engineering\nLeave Category: Sick Leave\nPeriod: 2026-10-02 to 2026-10-05 (4 Days)\nHandover: Elena Rostova covering urgent incidents.\nPhysician note attached.`;
     }
   } else if (lowerName.includes("receipt") || lowerName.includes("expense")) {
     detectedType = "Receipt";
@@ -51,19 +81,40 @@ export async function processDocumentContent(
     if (!text) {
       text = `ELECTRONIC RECEIPT\nMerchant: Starbucks Coffee\nDate: 2026-09-26 14:15\nOrder #49281\nItems: 4x Cold Brew, 2x Croissant\nTotal: INR 1,850.00\nPaid via Corporate Card ending 4091`;
     }
-  } else if (lowerName.includes("contract") || lowerName.includes("agreement") || lowerName.includes("nda")) {
+  } else if (
+    lowerName.includes("contract") ||
+    lowerName.includes("agreement") ||
+    lowerName.includes("nda")
+  ) {
     detectedType = "Contract";
     classConfidence = 0.99;
     if (!text) {
       text = `NON-DISCLOSURE AND MUTUAL CONFIDENTIALITY AGREEMENT\nBetween: Apex Global Enterprises\nAnd: CyberShield Security Partners\nEffective Date: 2026-10-01\nTerm: 3 Years\nGoverning Law: Republic of India`;
     }
-  } else if (lowerName.includes("hospital") || lowerName.includes("medical") || lowerName.includes("patient")) {
+  } else if (
+    lowerName.includes("bank") ||
+    lowerName.includes("statement")
+  ) {
+    detectedType = "Bank Statement";
+    classConfidence = 0.97;
+    if (!text) {
+      text = `ACCOUNT STATEMENT\nBank: HDFC Bank Limited\nAccount Holder: Apex Global Enterprises\nAccount No: XXXX-XXXX-9021\nPeriod: 01-Sep-2026 to 30-Sep-2026\nClosing Balance: INR 4,82,310.50`;
+    }
+  } else if (
+    lowerName.includes("hospital") ||
+    lowerName.includes("medical") ||
+    lowerName.includes("patient")
+  ) {
     detectedType = "Medical Form";
     classConfidence = 0.96;
     if (!text) {
       text = `INPATIENT MEDICAL DISCHARGE SUMMARY\nHospital: Apollo Speciality Hospitals\nPatient: John Doe (PID-99201)\nConsultant: Dr. R. Subramanian, MD\nDiagnosis: Acute Bronchitis\nTreatment: Intravenous antibiotics & nebulization\nTotal Bill: INR 38,400.00`;
     }
-  } else if (lowerName.includes("waybill") || lowerName.includes("delivery") || lowerName.includes("pod")) {
+  } else if (
+    lowerName.includes("waybill") ||
+    lowerName.includes("delivery") ||
+    lowerName.includes("pod")
+  ) {
     detectedType = "Delivery Note";
     classConfidence = 0.98;
     if (!text) {
@@ -73,7 +124,8 @@ export async function processDocumentContent(
     detectedType = "Report";
     classConfidence = 0.88;
     if (!text) {
-      text = `EXECUTIVE SUMMARY REPORT\nTitle: Q3 Workflow Automation ROI\nPrepared For: Management Committee\nKey Metrics: Processing latency reduced by 24%, manual touches down by 12%.\nDate: 2026-09-26`;
+      const cleanTitle = fileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+      text = `EXECUTIVE DOCUMENT REPORT\nTitle: ${cleanTitle}\nPrepared For: Management Committee\nKey Metrics: Processing latency reduced by 24%, manual touches down by 12%.\nDate: 2026-09-26`;
     }
   }
 
@@ -223,6 +275,209 @@ export async function processDocumentContent(
         extractedValue: "Sick Leave - Physician note attached.",
         dataType: "string",
         confidence: 0.94,
+      }
+    );
+  } else if (detectedType === "Report") {
+    const cleanTitle = fileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+    extractedFields.push(
+      {
+        id: `f-${Date.now()}-1`,
+        documentId: docId,
+        fieldName: "report_title",
+        fieldLabel: "Report Title",
+        extractedValue: cleanTitle,
+        dataType: "string",
+        confidence: 0.98,
+      },
+      {
+        id: `f-${Date.now()}-2`,
+        documentId: docId,
+        fieldName: "reporting_period",
+        fieldLabel: "Reporting Period / Cycle",
+        extractedValue: "Weekly Execution Cycle",
+        dataType: "string",
+        confidence: 0.95,
+      },
+      {
+        id: `f-${Date.now()}-3`,
+        documentId: docId,
+        fieldName: "department",
+        fieldLabel: "Prepared By / Dept",
+        extractedValue: "AI Systems & Performance Engineering",
+        dataType: "string",
+        confidence: 0.94,
+      },
+      {
+        id: `f-${Date.now()}-4`,
+        documentId: docId,
+        fieldName: "system_status",
+        fieldLabel: "Execution Status",
+        extractedValue: "Completed (Operational)",
+        dataType: "string",
+        confidence: 0.99,
+      },
+      {
+        id: `f-${Date.now()}-5`,
+        documentId: docId,
+        fieldName: "report_date",
+        fieldLabel: "Report Date",
+        extractedValue: new Date().toISOString().split("T")[0],
+        dataType: "date",
+        confidence: 0.97,
+      },
+      {
+        id: `f-${Date.now()}-6`,
+        documentId: docId,
+        fieldName: "key_metric",
+        fieldLabel: "Latency & Throughput",
+        extractedValue: "3.2s avg latency / 100% pipeline precision",
+        dataType: "string",
+        confidence: 0.93,
+      }
+    );
+  } else if (detectedType === "Purchase Order") {
+    const poNumMatch = text.match(/PO[-:\s#]+([A-Za-z0-9_-]+)/i) || ["", "PO-9921"];
+    const buyerMatch = text.match(/Buyer:\s*([^\n]+)/i) || ["", "Apex Global Enterprises"];
+    const supplierMatch = text.match(/Supplier:\s*([^\n]+)/i) || ["", "Lenovo Global Technology"];
+    const totalMatch = text.match(/(?:Authorized|Total)[^:]*:\s*(?:INR|Rs\.?|₹)?\s*([\d,]+(?:\.\d+)?)/i) || ["", "625000"];
+    const deliveryMatch = text.match(/Delivery:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/i) || ["", "2026-10-15"];
+
+    extractedFields.push(
+      {
+        id: `f-${Date.now()}-1`,
+        documentId: docId,
+        fieldName: "po_number",
+        fieldLabel: "PO Number",
+        extractedValue: poNumMatch[1].trim(),
+        dataType: "string",
+        confidence: 0.99,
+      },
+      {
+        id: `f-${Date.now()}-2`,
+        documentId: docId,
+        fieldName: "buyer",
+        fieldLabel: "Buyer / Customer",
+        extractedValue: buyerMatch[1].trim(),
+        dataType: "string",
+        confidence: 0.97,
+      },
+      {
+        id: `f-${Date.now()}-3`,
+        documentId: docId,
+        fieldName: "supplier",
+        fieldLabel: "Supplier / Vendor",
+        extractedValue: supplierMatch[1].trim(),
+        dataType: "string",
+        confidence: 0.98,
+      },
+      {
+        id: `f-${Date.now()}-4`,
+        documentId: docId,
+        fieldName: "total",
+        fieldLabel: "Total Authorized Amount",
+        extractedValue: totalMatch[1].replace(/,/g, "").trim(),
+        dataType: "currency",
+        confidence: 0.98,
+      },
+      {
+        id: `f-${Date.now()}-5`,
+        documentId: docId,
+        fieldName: "delivery_date",
+        fieldLabel: "Expected Delivery Date",
+        extractedValue: deliveryMatch[1].trim(),
+        dataType: "date",
+        confidence: 0.95,
+      }
+    );
+  } else if (detectedType === "Receipt") {
+    const merchantMatch = text.match(/Merchant:\s*([^\n]+)/i) || ["", "Starbucks Coffee"];
+    const totalMatch = text.match(/Total:\s*(?:INR|Rs\.?|₹)?\s*([\d,]+(?:\.\d+)?)/i) || ["", "1850"];
+    extractedFields.push(
+      {
+        id: `f-${Date.now()}-1`,
+        documentId: docId,
+        fieldName: "merchant",
+        fieldLabel: "Merchant",
+        extractedValue: merchantMatch[1].trim(),
+        dataType: "string",
+        confidence: 0.99,
+      },
+      {
+        id: `f-${Date.now()}-2`,
+        documentId: docId,
+        fieldName: "total",
+        fieldLabel: "Total Amount Paid",
+        extractedValue: totalMatch[1].replace(/,/g, "").trim(),
+        dataType: "currency",
+        confidence: 0.98,
+      },
+      {
+        id: `f-${Date.now()}-3`,
+        documentId: docId,
+        fieldName: "receipt_date",
+        fieldLabel: "Receipt Date",
+        extractedValue: "2026-09-26",
+        dataType: "date",
+        confidence: 0.97,
+      },
+      {
+        id: `f-${Date.now()}-4`,
+        documentId: docId,
+        fieldName: "payment_method",
+        fieldLabel: "Payment Method",
+        extractedValue: "Corporate Card (Visa 4091)",
+        dataType: "string",
+        confidence: 0.95,
+      }
+    );
+  } else if (detectedType === "Contract") {
+    const partyOne = text.match(/Between:\s*([^\n]+)/i) || ["", "Apex Global Enterprises"];
+    const partyTwo = text.match(/And:\s*([^\n]+)/i) || ["", "CyberShield Security Partners"];
+    extractedFields.push(
+      {
+        id: `f-${Date.now()}-1`,
+        documentId: docId,
+        fieldName: "first_party",
+        fieldLabel: "First Party (Disclosing)",
+        extractedValue: partyOne[1].trim(),
+        dataType: "string",
+        confidence: 0.98,
+      },
+      {
+        id: `f-${Date.now()}-2`,
+        documentId: docId,
+        fieldName: "second_party",
+        fieldLabel: "Second Party (Receiving)",
+        extractedValue: partyTwo[1].trim(),
+        dataType: "string",
+        confidence: 0.98,
+      },
+      {
+        id: `f-${Date.now()}-3`,
+        documentId: docId,
+        fieldName: "effective_date",
+        fieldLabel: "Effective Date",
+        extractedValue: "2026-10-01",
+        dataType: "date",
+        confidence: 0.97,
+      },
+      {
+        id: `f-${Date.now()}-4`,
+        documentId: docId,
+        fieldName: "term",
+        fieldLabel: "Term / Duration",
+        extractedValue: "3 Years",
+        dataType: "string",
+        confidence: 0.95,
+      },
+      {
+        id: `f-${Date.now()}-5`,
+        documentId: docId,
+        fieldName: "governing_law",
+        fieldLabel: "Governing Law",
+        extractedValue: "Republic of India",
+        dataType: "string",
+        confidence: 0.96,
       }
     );
   } else {

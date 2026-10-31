@@ -46,6 +46,8 @@ export type DocumentCategory =
   | 'Delivery Note'
   | 'Expense Claim'
   | 'Certificate'
+  | 'Bank Statement'
+  | 'Tax Document'
   | 'Other';
 
 export interface BoundingBox {
