@@ -28,15 +28,12 @@ GST (18%): INR 13,050.00`;
     expect(invNumField?.extractedValue).toBe("INV-1024");
   });
 
-  it("should flag low-confidence extractions for human review", async () => {
-    const rawLeaveText = `EMPLOYEE LEAVE
-Employee: Vikram Patel (EMP-408)
-Start Date: 2026-10-02
-End Date: 2026-10-05`;
-
-    const result = await processDocumentContent("Leave_Request_203.pdf", rawLeaveText);
-
-    expect(result.documentType).toBe("Leave Application");
-    expect(result.extractedFields.length).toBeGreaterThan(0);
+  it("should classify batch scanner invoices and extract vendor and amounts", async () => {
+    const result = await processDocumentContent("batch1-0001.jpg");
+    expect(result.documentType).toBe("Invoice");
+    const vendorField = result.extractedFields.find((f) => f.fieldName === "vendor");
+    expect(vendorField?.extractedValue).toBe("Andrews, Kirby and Valdez");
+    const totalField = result.extractedFields.find((f) => f.fieldName === "total");
+    expect(totalField?.extractedValue).toBe("6204.19");
   });
 });

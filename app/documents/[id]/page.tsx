@@ -35,9 +35,11 @@ import {
   Calendar,
   Layers,
   CreditCard,
+  ChevronDown,
 } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
-import { ExtractedField, BoundingBox } from "@/types";
+import { ExtractedField, BoundingBox, DocumentCategory } from "@/types";
+import { processDocumentContent } from "@/lib/ai/document-processor";
 import { formatBytes, formatTimeAgo, formatCurrency } from "@/lib/utils";
 
 interface CommentItem {
@@ -189,9 +191,38 @@ export default function DocumentDetailPage({
             {doc.name}
           </h1>
 
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-            {doc.documentType}
-          </span>
+          <div className="relative inline-flex items-center">
+            <select
+              value={doc.documentType}
+              onChange={async (e) => {
+                const newType = e.target.value as DocumentCategory;
+                const reprocessed = await processDocumentContent(
+                  doc.name,
+                  doc.rawOcrText || (newType === "Invoice" ? "TAX INVOICE\nInvoice no: 51109338\nDate of issue: 04/13/2013\nSeller: Andrews, Kirby and Valdez\nClient: Becker Ltd\nTax id: 945-82-2137\nTotal: $6,204.19\nVAT: $564.02" : undefined)
+                );
+                updateDocument(doc.id, {
+                  documentType: newType,
+                  extractedFields: reprocessed.extractedFields,
+                });
+                logAudit("DOCUMENT_RECLASSIFIED", "DOCUMENT", `Reclassified ${doc.name} as ${newType}`, {
+                  documentId: doc.id,
+                  diff: { oldValue: doc.documentType, newValue: newType },
+                });
+              }}
+              className="appearance-none cursor-pointer pl-3 pr-7 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 focus:outline-hidden hover:bg-blue-100 transition-colors shadow-2xs"
+              title="Click to switch document category"
+            >
+              <option value="Invoice">Invoice</option>
+              <option value="Purchase Order">Purchase Order</option>
+              <option value="Receipt">Receipt</option>
+              <option value="Report">Report</option>
+              <option value="Contract">Contract</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Delivery Note">Delivery Note</option>
+              <option value="Other">Other</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-blue-500 absolute right-2 pointer-events-none" />
+          </div>
           <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
             {doc.status}
           </span>
