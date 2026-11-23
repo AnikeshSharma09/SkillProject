@@ -241,7 +241,7 @@ export interface AuditLogItem {
   documentId?: string;
   documentName?: string;
   action: string;
-  entityType: 'DOCUMENT' | 'WORKFLOW' | 'APPROVAL' | 'RULE' | 'USER' | 'INTEGRATION' | 'SYSTEM';
+  entityType: 'DOCUMENT' | 'WORKFLOW' | 'APPROVAL' | 'RULE' | 'USER' | 'INTEGRATION' | 'SYSTEM' | 'PAYMENT';
   detail: string;
   diff?: {
     oldValue?: unknown;
@@ -306,3 +306,83 @@ export interface IntegrationCard {
   config: Record<string, string>;
   lastSyncedAt?: string;
 }
+
+export type PaymentStatus =
+  | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'SCHEDULED'
+  | 'PROCESSING'
+  | 'PAID'
+  | 'FAILED'
+  | 'RECONCILED';
+
+export type PaymentMethod =
+  | 'BANK_TRANSFER'
+  | 'UPI'
+  | 'CORPORATE_CARD'
+  | 'GATEWAY_LINK';
+
+export type PaymentType = 'PAYOUT' | 'COLLECTION';
+
+export interface PaymentSecurityVerification {
+  isTamperProof: boolean;
+  makerCheckerValidated: boolean;
+  pinVerified: boolean;
+  encryptionStandard: string;
+  auditChecksum: string;
+  verifiedAt?: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  organizationId: string;
+  documentId?: string;
+  documentName?: string;
+  type: PaymentType;
+  beneficiaryName: string;
+  beneficiaryAccount: string; // Masked (e.g., •••• •••• 4912 or name@upi)
+  beneficiaryIfscOrSwift?: string;
+  amount: number;
+  currency: string;
+  paymentMethod: PaymentMethod;
+  status: PaymentStatus;
+  securityHash: string; // HMAC-SHA256 signature
+  idempotencyKey: string;
+  referenceNumber?: string; // UTR / Gateway Txn ID
+  scheduledDate: string;
+  completedAt?: string;
+  initiatedBy: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: UserRole;
+  };
+  approvedBy?: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: UserRole;
+  };
+  reconciliationStatus: 'MATCHED' | 'PENDING' | 'DISCREPANCY';
+  securityVerification: PaymentSecurityVerification;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentLinkItem {
+  id: string;
+  organizationId: string;
+  documentId?: string;
+  clientName: string;
+  clientEmail: string;
+  invoiceNumber: string;
+  amount: number;
+  currency: string;
+  expiresAt: string;
+  status: 'ACTIVE' | 'PAID' | 'EXPIRED';
+  paymentUrl: string;
+  qrCodeData: string;
+  createdAt: string;
+}
+

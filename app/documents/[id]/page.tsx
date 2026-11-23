@@ -34,6 +34,7 @@ import {
   FileCheck,
   Calendar,
   Layers,
+  CreditCard,
 } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
 import { ExtractedField, BoundingBox } from "@/types";
@@ -230,6 +231,16 @@ export default function DocumentDetailPage({
             <Play className="w-3.5 h-3.5 fill-current" />
             <span>Run Workflow</span>
           </button>
+
+          {["Invoice", "Purchase Order", "Receipt"].includes(doc.documentType) && (
+            <Link
+              href="/payments"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-2xs hover:shadow-sm transition-all"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Disburse Payment</span>
+            </Link>
+          )}
         </div>
       </div>
 

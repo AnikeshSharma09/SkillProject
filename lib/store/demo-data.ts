@@ -9,6 +9,7 @@ import {
   AIRequestTelemetry,
   IntegrationCard,
   RuleDefinition,
+  PaymentTransaction,
 } from "@/types";
 
 export const DEMO_ORGANIZATION: Organization = {
@@ -74,6 +75,7 @@ export const INITIAL_DOCUMENTS: DocumentItem[] = [];
 export const INITIAL_APPROVALS: ApprovalTask[] = [];
 export const INITIAL_WORKFLOWS: WorkflowDefinition[] = [];
 export const INITIAL_AUDIT_LOGS: AuditLogItem[] = [];
+export const INITIAL_PAYMENTS: PaymentTransaction[] = [];
 
 // Rich sample dataset for optional 1-click seeding
 export const SAMPLE_DOCUMENTS: DocumentItem[] = [
@@ -408,3 +410,124 @@ export const INITIAL_INTEGRATIONS: IntegrationCard[] = [
 export const INITIAL_AI_EVALUATIONS: AIEvaluationItem[] = [];
 
 export const INITIAL_AI_TELEMETRY: AIRequestTelemetry[] = [];
+
+export const SAMPLE_PAYMENTS: PaymentTransaction[] = [
+  {
+    id: "pay-1024",
+    organizationId: "org-symbiosis-01",
+    documentId: "doc-inv-1024",
+    documentName: "Invoice_INV1024.pdf",
+    type: "PAYOUT",
+    beneficiaryName: "ABC Technologies Private Limited",
+    beneficiaryAccount: "•••• •••• 4092",
+    beneficiaryIfscOrSwift: "HDFC0001824",
+    amount: 72500,
+    currency: "INR",
+    paymentMethod: "BANK_TRANSFER",
+    status: "PAID",
+    securityHash: "chk_8a92f01d4a",
+    idempotencyKey: "idemp_20260924_inv1024",
+    referenceNumber: "UTR98234810294",
+    scheduledDate: "2026-09-25T10:00:00Z",
+    completedAt: "2026-09-25T10:02:15Z",
+    initiatedBy: {
+      id: "usr-emp-04",
+      fullName: "Rahul Sharma",
+      email: "rahul.sharma@symbiosis.edu",
+      role: "EMPLOYEE",
+    },
+    approvedBy: {
+      id: "usr-admin-01",
+      fullName: "Sarah Chen",
+      email: "sarah.chen@symbiosis.edu",
+      role: "ADMIN",
+    },
+    reconciliationStatus: "MATCHED",
+    securityVerification: {
+      isTamperProof: true,
+      makerCheckerValidated: true,
+      pinVerified: true,
+      encryptionStandard: "AES-256-GCM + SHA-256 Checksum",
+      auditChecksum: "chk_8a92f01d4a",
+      verifiedAt: "2026-09-25T10:01:45Z",
+    },
+    notes: "Disbursement for Enterprise Cloud Migration Support.",
+    createdAt: "2026-09-24T18:30:00Z",
+    updatedAt: "2026-09-25T10:02:15Z",
+  },
+  {
+    id: "pay-po-992",
+    organizationId: "org-symbiosis-01",
+    documentId: "doc-po-8821",
+    documentName: "PO_Hardware_Procurement.pdf",
+    type: "PAYOUT",
+    beneficiaryName: "Global Hardware Solutions Ltd",
+    beneficiaryAccount: "•••• •••• 8193",
+    beneficiaryIfscOrSwift: "SBIN0004921",
+    amount: 185000,
+    currency: "INR",
+    paymentMethod: "BANK_TRANSFER",
+    status: "PENDING_APPROVAL",
+    securityHash: "chk_4d89a12c8e",
+    idempotencyKey: "idemp_20260926_po8821",
+    scheduledDate: "2026-09-27T11:30:00Z",
+    initiatedBy: {
+      id: "usr-emp-04",
+      fullName: "Rahul Sharma",
+      email: "rahul.sharma@symbiosis.edu",
+      role: "EMPLOYEE",
+    },
+    reconciliationStatus: "PENDING",
+    securityVerification: {
+      isTamperProof: true,
+      makerCheckerValidated: false,
+      pinVerified: false,
+      encryptionStandard: "AES-256-GCM + SHA-256 Checksum",
+      auditChecksum: "chk_4d89a12c8e",
+    },
+    notes: "Campus server hardware order awaiting CFO PIN authorization.",
+    createdAt: "2026-09-26T09:15:00Z",
+    updatedAt: "2026-09-26T09:15:00Z",
+  },
+  {
+    id: "pay-upi-103",
+    organizationId: "org-symbiosis-01",
+    type: "PAYOUT",
+    beneficiaryName: "Apex Courier & Logistics",
+    beneficiaryAccount: "apexlogistics@okaxis",
+    amount: 4850,
+    currency: "INR",
+    paymentMethod: "UPI",
+    status: "PAID",
+    securityHash: "chk_1f48e90a2b",
+    idempotencyKey: "idemp_20260926_upi103",
+    referenceNumber: "UPI-RR-90412849",
+    scheduledDate: "2026-09-26T14:00:00Z",
+    completedAt: "2026-09-26T14:00:30Z",
+    initiatedBy: {
+      id: "usr-manager-02",
+      fullName: "Vikram Patel",
+      email: "vikram.patel@symbiosis.edu",
+      role: "MANAGER",
+    },
+    approvedBy: {
+      id: "usr-admin-01",
+      fullName: "Sarah Chen",
+      email: "sarah.chen@symbiosis.edu",
+      role: "ADMIN",
+    },
+    reconciliationStatus: "MATCHED",
+    securityVerification: {
+      isTamperProof: true,
+      makerCheckerValidated: true,
+      pinVerified: true,
+      encryptionStandard: "AES-256-GCM + SHA-256 Checksum",
+      auditChecksum: "chk_1f48e90a2b",
+      verifiedAt: "2026-09-26T14:00:20Z",
+    },
+    notes: "Express courier charges for international accreditation files.",
+    createdAt: "2026-09-26T13:45:00Z",
+    updatedAt: "2026-09-26T14:00:30Z",
+  },
+];
+

@@ -21,6 +21,7 @@ import {
   ChevronDown,
   LogOut,
   LogIn,
+  CreditCard,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { useApp } from "@/lib/store/app-context";
@@ -43,11 +44,13 @@ export function Sidebar() {
     availableUsers,
     approvals,
     documents,
+    payments,
     isAuthenticated,
     logout,
   } = useApp();
 
   const pendingApprovalsCount = approvals.filter((a) => a.status === "PENDING").length;
+  const pendingPaymentsCount = (payments || []).filter((p) => p.status === "PENDING_APPROVAL").length;
 
   // Exact navigation item order matching the mockup
   const navItems: NavItem[] = [
@@ -61,6 +64,13 @@ export function Sidebar() {
       icon: CheckCircle2,
       badge: pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined,
       badgeVariant: "red",
+    },
+    {
+      name: "Payments",
+      href: "/payments",
+      icon: CreditCard,
+      badge: pendingPaymentsCount > 0 ? pendingPaymentsCount : undefined,
+      badgeVariant: "amber",
     },
     { name: "Tasks", href: "/tasks", icon: CheckSquare },
     { name: "Integrations", href: "/integrations", icon: Network },

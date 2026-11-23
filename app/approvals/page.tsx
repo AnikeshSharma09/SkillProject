@@ -17,6 +17,8 @@ import {
   Eye,
   MessageSquare,
   Sparkles,
+  CreditCard,
+  ArrowUpRight,
 } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
 import { ApprovalTask, ApprovalStatus } from "@/types";
@@ -220,6 +222,16 @@ export default function ApprovalsPage() {
                   <Eye className="w-3.5 h-3.5" />
                   <span>Inspect</span>
                 </Link>
+
+                {task.status === "APPROVED" && (
+                  <Link
+                    href="/payments"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 transition-colors"
+                  >
+                    <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Disburse Payout</span>
+                  </Link>
+                )}
 
                 {task.status === "PENDING" && (
                   <div className="flex items-center gap-2">

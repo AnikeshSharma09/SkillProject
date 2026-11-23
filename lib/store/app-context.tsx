@@ -11,6 +11,8 @@ import {
   RuleDefinition,
   ExtractedField,
   UserRole,
+  PaymentTransaction,
+  PaymentMethod,
 } from "@/types";
 import {
   DEMO_USERS,
@@ -19,10 +21,19 @@ import {
   INITIAL_WORKFLOWS,
   INITIAL_AUDIT_LOGS,
   INITIAL_RULES,
+  INITIAL_PAYMENTS,
   SAMPLE_DOCUMENTS,
   SAMPLE_APPROVALS,
   SAMPLE_AUDIT_LOGS,
+  SAMPLE_PAYMENTS,
 } from "./demo-data";
+import {
+  generateChecksum,
+  generateIdempotencyKey,
+  maskAccountNumber,
+  validateMakerChecker,
+  verifySecurityPin,
+} from "@/lib/security/payment-pipeline";
 
 export {
   DEMO_USERS,
@@ -31,9 +42,11 @@ export {
   INITIAL_WORKFLOWS,
   INITIAL_AUDIT_LOGS,
   INITIAL_RULES,
+  INITIAL_PAYMENTS,
   SAMPLE_DOCUMENTS,
   SAMPLE_APPROVALS,
   SAMPLE_AUDIT_LOGS,
+  SAMPLE_PAYMENTS,
 };
 
 interface AppContextType {
@@ -96,6 +109,26 @@ interface AppContextType {
     detail: string,
     metadata?: { documentId?: string; documentName?: string; diff?: any }
   ) => void;
+  // Payment Operations
+  payments: PaymentTransaction[];
+  initiatePayment: (data: {
+    documentId?: string;
+    documentName?: string;
+    beneficiaryName: string;
+    beneficiaryAccount: string;
+    beneficiaryIfscOrSwift?: string;
+    amount: number;
+    currency?: string;
+    paymentMethod: PaymentMethod;
+    notes?: string;
+    scheduledDate?: string;
+  }) => { success: boolean; payment?: PaymentTransaction; error?: string };
+  authorizePayment: (
+    paymentId: string,
+    securityPin: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  reconcilePayment: (paymentId: string) => void;
+  cancelPayment: (paymentId: string, reason?: string) => void;
   // Demo Data & Reset Helpers
   seedDemoData: () => void;
   resetAllData: () => void;
@@ -113,6 +146,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [approvals, setApprovals] = useState<ApprovalTask[]>(INITIAL_APPROVALS);
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>(INITIAL_WORKFLOWS);
   const [rules, setRules] = useState<RuleDefinition[]>(INITIAL_RULES);
+  const [payments, setPayments] = useState<PaymentTransaction[]>(INITIAL_PAYMENTS);
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>(INITIAL_AUDIT_LOGS);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -170,6 +204,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(savedNotifs);
         if (Array.isArray(parsed)) {
           setNotifications(parsed);
+        }
+      }
+
+      // 6b. Payments
+      const savedPayments = localStorage.getItem("aiflow_payments");
+      if (savedPayments) {
+        const parsed = JSON.parse(savedPayments);
+        if (Array.isArray(parsed)) {
+          setPayments(parsed);
         }
       }
 
@@ -259,6 +302,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       console.warn("Error persisting notifications:", e);
     }
   }, [notifications, isHydrated]);
+
+  // Persist Payments to localStorage
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem("aiflow_payments", JSON.stringify(payments));
+    } catch (e) {
+      console.warn("Error persisting payments:", e);
+    }
+  }, [payments, isHydrated]);
 
   // Persist Users & Auth to localStorage
   useEffect(() => {
@@ -684,17 +737,215 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
+  // Payment Operations
+  const initiatePayment = useCallback(
+    (data: {
+      documentId?: string;
+      documentName?: string;
+      beneficiaryName: string;
+      beneficiaryAccount: string;
+      beneficiaryIfscOrSwift?: string;
+      amount: number;
+      currency?: string;
+      paymentMethod: PaymentMethod;
+      notes?: string;
+      scheduledDate?: string;
+    }) => {
+      if (data.amount <= 0) {
+        return { success: false, error: "Payment amount must be greater than zero." };
+      }
+      if (!data.beneficiaryName.trim() || !data.beneficiaryAccount.trim()) {
+        return { success: false, error: "Beneficiary name and account details are required." };
+      }
+
+      const id = `pay-${Date.now().toString(36)}`;
+      const idempotencyKey = generateIdempotencyKey();
+      const currency = data.currency || "INR";
+      const checksum = generateChecksum({
+        amount: data.amount,
+        beneficiaryAccount: data.beneficiaryAccount,
+        currency,
+        idempotencyKey,
+      });
+
+      const newPayment: PaymentTransaction = {
+        id,
+        organizationId: currentUser.organizationId,
+        documentId: data.documentId,
+        documentName: data.documentName,
+        type: "PAYOUT",
+        beneficiaryName: data.beneficiaryName.trim(),
+        beneficiaryAccount: maskAccountNumber(data.beneficiaryAccount),
+        beneficiaryIfscOrSwift: data.beneficiaryIfscOrSwift?.trim().toUpperCase(),
+        amount: data.amount,
+        currency,
+        paymentMethod: data.paymentMethod,
+        status: "PENDING_APPROVAL",
+        securityHash: checksum,
+        idempotencyKey,
+        scheduledDate: data.scheduledDate || new Date().toISOString(),
+        initiatedBy: {
+          id: currentUser.id,
+          fullName: currentUser.fullName,
+          email: currentUser.email,
+          role: currentUser.role,
+        },
+        reconciliationStatus: "PENDING",
+        securityVerification: {
+          isTamperProof: true,
+          makerCheckerValidated: false,
+          pinVerified: false,
+          encryptionStandard: "AES-256-GCM + SHA-256 Checksum",
+          auditChecksum: checksum,
+        },
+        notes: data.notes,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      setPayments((prev) => [newPayment, ...prev]);
+
+      logAudit(
+        "PAYMENT_INITIATED",
+        "PAYMENT",
+        `Initiated ${currency} ${data.amount.toLocaleString()} disbursement to ${data.beneficiaryName}. Awaiting security PIN authorization.`,
+        { documentId: data.documentId, documentName: data.documentName }
+      );
+
+      addNotification({
+        title: "Payment Authorization Required",
+        message: `Disbursement of ${currency} ${data.amount.toLocaleString()} to ${data.beneficiaryName} is queued for approval.`,
+        type: "approval",
+        documentId: data.documentId,
+      });
+
+      return { success: true, payment: newPayment };
+    },
+    [currentUser, logAudit, addNotification]
+  );
+
+  const authorizePayment = useCallback(
+    async (paymentId: string, securityPin: string) => {
+      const payment = payments.find((p) => p.id === paymentId);
+      if (!payment) {
+        return { success: false, error: "Payment transaction not found." };
+      }
+
+      if (payment.status === "PAID") {
+        return { success: false, error: "Transaction is already disbursed." };
+      }
+
+      // 1. Verify Security PIN
+      if (!verifySecurityPin(securityPin)) {
+        return { success: false, error: "Invalid Security PIN. Enter authorized 4-digit code (8842)." };
+      }
+
+      // 2. Validate Maker-Checker security policy
+      const makerChecker = validateMakerChecker(
+        payment.initiatedBy.id,
+        currentUser.id,
+        currentUser.role
+      );
+      if (!makerChecker.allowed) {
+        return { success: false, error: makerChecker.reason };
+      }
+
+      const now = new Date().toISOString();
+      const utr = `UTR${Date.now()}${Math.floor(1000 + Math.random() * 9000)}`;
+
+      setPayments((prev) =>
+        prev.map((p) => {
+          if (p.id !== paymentId) return p;
+          return {
+            ...p,
+            status: "PAID",
+            referenceNumber: utr,
+            completedAt: now,
+            approvedBy: {
+              id: currentUser.id,
+              fullName: currentUser.fullName,
+              email: currentUser.email,
+              role: currentUser.role,
+            },
+            reconciliationStatus: "MATCHED",
+            securityVerification: {
+              ...p.securityVerification,
+              makerCheckerValidated: true,
+              pinVerified: true,
+              verifiedAt: now,
+            },
+            updatedAt: now,
+          };
+        })
+      );
+
+      logAudit(
+        "FUNDS_DISBURSED",
+        "PAYMENT",
+        `Released ${payment.currency} ${payment.amount.toLocaleString()} to ${payment.beneficiaryName}. UTR: ${utr}. Authorized by ${currentUser.fullName}.`,
+        { documentId: payment.documentId, documentName: payment.documentName }
+      );
+
+      addNotification({
+        title: "Payment Disbursed Successfully",
+        message: `${payment.currency} ${payment.amount.toLocaleString()} was successfully paid to ${payment.beneficiaryName}. UTR: ${utr}`,
+        type: "system",
+        documentId: payment.documentId,
+      });
+
+      return { success: true };
+    },
+    [payments, currentUser, logAudit, addNotification]
+  );
+
+  const cancelPayment = useCallback(
+    (paymentId: string, reason = "Canceled by user") => {
+      setPayments((prev) =>
+        prev.map((p) => {
+          if (p.id !== paymentId) return p;
+          return {
+            ...p,
+            status: "FAILED",
+            notes: p.notes ? `${p.notes} | Canceled: ${reason}` : `Canceled: ${reason}`,
+            updatedAt: new Date().toISOString(),
+          };
+        })
+      );
+
+      logAudit("PAYMENT_CANCELED", "PAYMENT", `Canceled payment ${paymentId}. Reason: ${reason}`);
+    },
+    [logAudit]
+  );
+
+  const reconcilePayment = useCallback(
+    (paymentId: string) => {
+      setPayments((prev) =>
+        prev.map((p) => {
+          if (p.id !== paymentId) return p;
+          return {
+            ...p,
+            reconciliationStatus: "MATCHED",
+            updatedAt: new Date().toISOString(),
+          };
+        })
+      );
+      logAudit("PAYMENT_RECONCILED", "PAYMENT", `Reconciliation verified for payment ${paymentId}.`);
+    },
+    [logAudit]
+  );
+
   // Helper to load sample demo data with 1-click
   const seedDemoData = () => {
     setDocuments(SAMPLE_DOCUMENTS);
     setApprovals(SAMPLE_APPROVALS);
     setAuditLogs(SAMPLE_AUDIT_LOGS);
+    setPayments(SAMPLE_PAYMENTS);
     addNotification({
       title: "Demo Dataset Seeded",
-      message: `Loaded ${SAMPLE_DOCUMENTS.length} sample enterprise documents and approval flows.`,
+      message: `Loaded ${SAMPLE_DOCUMENTS.length} sample enterprise documents and ${SAMPLE_PAYMENTS.length} payments.`,
       type: "system",
     });
-    logAudit("DEMO_SEEDED", "SYSTEM", "Loaded sample documents and approval tasks for evaluation.");
+    logAudit("DEMO_SEEDED", "SYSTEM", "Loaded sample documents, payments, and approval tasks for evaluation.");
   };
 
   // Helper to clear all data back to blank slate
@@ -703,15 +954,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setApprovals([]);
     setAuditLogs([]);
     setNotifications([]);
+    setPayments([]);
     try {
       localStorage.removeItem("aiflow_documents");
       localStorage.removeItem("aiflow_approvals");
       localStorage.removeItem("aiflow_audit_logs");
       localStorage.removeItem("aiflow_notifications");
+      localStorage.removeItem("aiflow_payments");
     } catch {}
     addNotification({
       title: "Workspace Cleared",
-      message: "Reset all data to clean blank slate (0 documents).",
+      message: "Reset all data to clean blank slate (0 documents, 0 payments).",
       type: "system",
     });
   };
@@ -751,6 +1004,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         markAllNotificationsAsRead,
         addNotification,
         logAudit,
+        payments,
+        initiatePayment,
+        authorizePayment,
+        reconcilePayment,
+        cancelPayment,
         seedDemoData,
         resetAllData,
         isHydrated,
