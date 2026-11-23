@@ -167,16 +167,24 @@ export async function processDocumentContent(
         : "INR";
 
     const grossMatch = text.match(/(?:Gross worth|Total Payable|Grand Total|Total|Amount Due|Amount)[^:\n]*[:\s]+(?:INR|Rs\.?|₹|\$|€|£)?\s*([0-9.,\s]+)/i);
-    const rawTotalStr = grossMatch ? grossMatch[1].trim().replace(/\s/g, "").replace(/,/g, ".") : "759.12";
-    const rawTotalNum = parseFloat(rawTotalStr) || 759.12;
+    const parseAmount = (s: string, fallback: number): number => {
+      if (!s) return fallback;
+      let cleaned = s.trim().replace(/[^0-9.,]/g, "");
+      if (/,\d{2}$/.test(cleaned)) {
+        cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+      } else {
+        cleaned = cleaned.replace(/,/g, "");
+      }
+      return parseFloat(cleaned) || fallback;
+    };
+
+    const rawTotalNum = grossMatch ? parseAmount(grossMatch[1], 759.12) : 759.12;
 
     const netMatch = text.match(/(?:Net worth|Subtotal)[^:\n]*[:\s]+(?:INR|Rs\.?|₹|\$|€|£)?\s*([0-9.,\s]+)/i);
-    const rawNetStr = netMatch ? netMatch[1].trim().replace(/\s/g, "").replace(/,/g, ".") : "";
-    const rawSubtotalNum = rawNetStr ? (parseFloat(rawNetStr) || 690.11) : Math.round((rawTotalNum / 1.1) * 100) / 100;
+    const rawSubtotalNum = netMatch ? parseAmount(netMatch[1], 690.11) : Math.round((rawTotalNum / 1.1) * 100) / 100;
 
     const taxMatch = text.match(/(?:VAT|GST|Tax|IGST)[^:\n]*[:\s]+(?:INR|Rs\.?|₹|\$|€|£)?\s*([0-9.,\s]+)/i);
-    const rawTaxStr = taxMatch ? taxMatch[1].trim().replace(/\s/g, "").replace(/,/g, ".") : "";
-    const rawTaxNum = rawTaxStr ? (parseFloat(rawTaxStr) || 69.01) : Math.round((rawTotalNum - rawSubtotalNum) * 100) / 100;
+    const rawTaxNum = taxMatch ? parseAmount(taxMatch[1], 69.01) : Math.round((rawTotalNum - rawSubtotalNum) * 100) / 100;
 
     const dateMatch = text.match(/(?:Date of issue|Date)[:\s]+([0-9]{2,4}[-/.][0-9]{2}[-/.][0-9]{2,4})/i) || ["", "2026-09-24"];
     const dueMatch = text.match(/(?:Due Date)[:\s]+([0-9]{2,4}[-/.][0-9]{2}[-/.][0-9]{2,4})/i) || ["", "2026-10-04"];
