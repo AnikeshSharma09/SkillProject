@@ -93,6 +93,8 @@ export const SAMPLE_DOCUMENTS: DocumentItem[] = [
     overallConfidence: 0.984,
     pageCount: 1,
     isArchived: false,
+    dueDate: "2026-10-04",
+    summary: "Official commercial invoice (Ref: INV-1024) issued by ABC Technologies Private Limited to Symbiosis University.\nTotal balance payable is INR 72,500.00, covering itemized products and standard applicable taxes.\nItemized transaction schedule details multi-unit inventory fulfillments and operational service deliverables.\nCommercial settlement deadline is scheduled for 2026-10-04 via corporate banking disbursement.\nAll line items and digital signatures have passed automated reconciliation checks and are queued for release approval.",
     uploadedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     createdBy: {
@@ -158,6 +160,8 @@ export const SAMPLE_DOCUMENTS: DocumentItem[] = [
     overallConfidence: 0.642,
     pageCount: 1,
     isArchived: false,
+    dueDate: "2026-10-05",
+    summary: "Executive document profile for 'Leave Request 203' classified under Leave Application organizational taxonomy.\nContent stream extracted with multi-layer OCR confidence and structured entity cross-referencing.\nKey operational stakeholders and departmental workflows notified of document ingestion.\nCompliance milestone and review timeline set for 2026-10-05.\nIndexed into semantic search vector space for real-time querying and automated policy routing.",
     uploadedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
     createdBy: {
@@ -203,6 +207,8 @@ export const SAMPLE_DOCUMENTS: DocumentItem[] = [
     overallConfidence: 0.97,
     pageCount: 2,
     isArchived: false,
+    dueDate: "2026-10-15",
+    summary: "Corporate Purchase Order authorization (Ref: PO-9921) issued to approved supplier Lenovo Global Technology.\nTotal committed procurement spend authorized up to INR 6,25,000 across verified hardware/service line items.\nRequisition originates from operational systems department to support enterprise campus infrastructure requirements.\nMandatory fulfillment and physical shipment delivery milestone is targeted on or before 2026-10-15.\nThree-way matching criteria initialized between purchase order, receiving logs, and vendor payment disbursement.",
     uploadedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 1 * 3600 * 1000).toISOString(),
     createdBy: {

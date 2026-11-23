@@ -97,6 +97,8 @@ export interface DocumentItem {
   pageCount: number;
   extractedFields?: ExtractedField[];
   previewUrl?: string;
+  summary?: string;
+  dueDate?: string;
   isArchived: boolean;
   uploadedAt: string;
   updatedAt: string;

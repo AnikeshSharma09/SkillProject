@@ -36,11 +36,18 @@ import {
   Layers,
   CreditCard,
   ChevronDown,
+  Globe,
+  Copy,
 } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
 import { ExtractedField, BoundingBox, DocumentCategory } from "@/types";
-import { processDocumentContent } from "@/lib/ai/document-processor";
+import { processDocumentContent, generateDocumentSummary } from "@/lib/ai/document-processor";
 import { formatBytes, formatTimeAgo, formatCurrency } from "@/lib/utils";
+import {
+  SUPPORTED_LANGUAGES,
+  translateSummary,
+  translateFieldLabel,
+} from "@/lib/ai/translator";
 
 interface CommentItem {
   id: string;
@@ -62,6 +69,8 @@ export default function DocumentDetailPage({
 
   const doc = documents.find((d) => d.id === resolvedParams.id);
   const [activeTab, setActiveTab] = useState<"data" | "workflow" | "history" | "comments">("data");
+  const [selectedLang, setSelectedLang] = useState<string>("en");
+  const [isSummaryCopied, setIsSummaryCopied] = useState(false);
   const [activePage, setActivePage] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [rotation, setRotation] = useState(0);
@@ -179,6 +188,22 @@ export default function DocumentDetailPage({
     if (doc?.rawOcrText?.includes("$") || doc?.name?.toLowerCase().includes("usd")) return "USD";
     return "INR";
   }, [doc]);
+
+  // Executive 4-5 line summary
+  const rawDocSummary = useMemo(() => {
+    if (doc.summary) return doc.summary;
+    const { summary } = generateDocumentSummary(
+      doc.documentType,
+      doc.extractedFields || [],
+      doc.rawOcrText || "",
+      doc.name
+    );
+    return summary;
+  }, [doc]);
+
+  const translatedSummary = useMemo(() => {
+    return translateSummary(rawDocSummary, selectedLang);
+  }, [rawDocSummary, selectedLang]);
 
   const isPdf =
     doc.mimeType === "application/pdf" ||
@@ -587,10 +612,6 @@ export default function DocumentDetailPage({
                           </span>
                         </div>
                       </div>
-                            {formatCurrency(parseFloat(getFieldValue(["total", "amount"], "76700")) || 76700)}
-                          </span>
-                        </div>
-                      </div>
                     </div>
                   ) : (
                     /* Case 3: GENERIC DOCUMENT SHEET (PO, Contract, Leave, Form, Other) */
@@ -652,6 +673,96 @@ export default function DocumentDetailPage({
 
         {/* RIGHT PANE (5/12): Tabs (Extracted Data, Workflow, History, Comments) */}
         <div className="lg:col-span-5 clean-card flex flex-col p-5">
+          {/* AI Executive Summary Card (4-5 Lines with Live Multilingual Translation) */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50/80 via-indigo-50/30 to-white dark:from-blue-950/40 dark:via-slate-900/60 dark:to-slate-900 border border-blue-200/80 dark:border-blue-900/50 shadow-xs mb-4">
+            <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-blue-100 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>Executive Summary</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                      4-5 Line Briefing
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    AI synthesis &amp; operational status
+                  </p>
+                </div>
+              </div>
+
+              {/* Language Selector & Copy Action */}
+              <div className="flex items-center gap-1.5">
+                <div className="relative inline-flex items-center">
+                  <Globe className="w-3 h-3 text-slate-400 absolute left-2 pointer-events-none" />
+                  <select
+                    value={selectedLang}
+                    onChange={(e) => setSelectedLang(e.target.value)}
+                    className="pl-6 pr-7 py-1 text-[11px] font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-2xs focus:outline-hidden cursor-pointer"
+                    title="Translate summary and extracted field labels"
+                  >
+                    {SUPPORTED_LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.flag} {l.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 pointer-events-none" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(translatedSummary);
+                    setIsSummaryCopied(true);
+                    setTimeout(() => setIsSummaryCopied(false), 2000);
+                  }}
+                  className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-600 dark:text-slate-300 shadow-2xs transition-all cursor-pointer flex items-center gap-1 text-[11px] font-medium"
+                  title="Copy translated summary"
+                >
+                  {isSummaryCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* 4 to 5 Lines Rendered with Numbered Bullet Badges */}
+            <div className="space-y-2">
+              {translatedSummary.split("\n").filter(Boolean).map((line, idx) => (
+                <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
+                  <span className="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">
+                    {idx + 1}
+                  </span>
+                  <span className="font-medium">{line}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Target Settlement / Due Date Indicator */}
+            {(doc.dueDate || doc.extractedFields?.find((f) => f.fieldName.toLowerCase().includes("due"))) && (
+              <div className="mt-3 pt-2.5 border-t border-blue-100/60 dark:border-white/[0.06] flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                  Target Settlement Deadline:
+                </span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {doc.dueDate || doc.extractedFields?.find((f) => f.fieldName.toLowerCase().includes("due"))?.extractedValue}
+                </span>
+              </div>
+            )}
+          </div>
+
           {/* Tabs Navigation */}
           <div className="flex items-center gap-4 border-b border-slate-200 dark:border-white/[0.08] pb-3 mb-4 text-xs font-semibold">
             {[
@@ -729,7 +840,7 @@ export default function DocumentDetailPage({
                         <div className="flex items-center gap-2 w-full">
                           <div className="flex-1">
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                              Editing: {field.fieldLabel}
+                              Editing: {translateFieldLabel(field.fieldLabel, selectedLang)}
                             </span>
                             <input
                               type="text"
@@ -761,7 +872,7 @@ export default function DocumentDetailPage({
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                                {field.fieldLabel}
+                                {translateFieldLabel(field.fieldLabel, selectedLang)}
                               </span>
                               {field.isCorrected && (
                                 <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/10 text-amber-500">
