@@ -14,19 +14,37 @@ export function formatBytes(bytes: number, decimals = 1) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 
-export function formatCurrency(amount: number, currency = "INR") {
-  if (currency === "INR") {
+export function formatCurrency(amount: number | string, currency = "INR") {
+  const numericAmount =
+    typeof amount === "number"
+      ? amount
+      : parseFloat(String(amount).replace(/[^0-9.-]/g, "")) || 0;
+
+  const raw = (currency || "INR").trim().toUpperCase();
+  const code =
+    raw === "$" || raw === "USD"
+      ? "USD"
+      : raw === "€" || raw === "EUR"
+      ? "EUR"
+      : raw === "£" || raw === "GBP"
+      ? "GBP"
+      : raw === "₹" || raw === "INR"
+      ? "INR"
+      : "INR";
+
+  if (code === "INR") {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(numericAmount);
   }
+
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: currency,
+    currency: code,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(numericAmount);
 }
 
 export function formatDate(dateString: string | Date) {

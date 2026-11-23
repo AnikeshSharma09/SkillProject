@@ -108,6 +108,16 @@ export function DocumentUploadModal({
         file.name.endsWith(".md")
       ) {
         extractedText = await file.text();
+      } else if (file.type.startsWith("image/")) {
+        try {
+          const { recognize } = await import("tesseract.js");
+          const ocrData = await recognize(file, "eng");
+          if (ocrData?.data?.text && ocrData.data.text.trim().length > 10) {
+            extractedText = ocrData.data.text;
+          }
+        } catch (ocrErr) {
+          console.warn("Client optical OCR notice:", ocrErr);
+        }
       }
     } catch (err) {
       console.warn("Could not read text content directly from file:", err);
