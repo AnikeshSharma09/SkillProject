@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use, useMemo } from "react";
+import React, { useState, useEffect, useRef, use, useMemo } from "react";
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import {
@@ -87,18 +87,14 @@ export default function DocumentDetailPage({
     },
   ]);
 
+  const healedDocIdRef = useRef<string | null>(null);
+
   // Auto-heal distorted entity extractions, misclassified reports, and legacy mock fields
   useEffect(() => {
-    if (!doc) return;
+    if (!doc || healedDocIdRef.current === doc.id) return;
     const healed = healDocumentItem(doc);
-    const isDifferent =
-      healed.documentType !== doc.documentType ||
-      healed.rawOcrText !== doc.rawOcrText ||
-      healed.summary !== doc.summary ||
-      healed.dueDate !== doc.dueDate ||
-      JSON.stringify(healed.extractedFields) !== JSON.stringify(doc.extractedFields);
-
-    if (isDifferent) {
+    if (healed !== doc) {
+      healedDocIdRef.current = doc.id;
       updateDocument(doc.id, {
         documentType: healed.documentType,
         classificationConfidence: healed.classificationConfidence,
@@ -108,8 +104,10 @@ export default function DocumentDetailPage({
         summary: healed.summary,
         dueDate: healed.dueDate,
       });
+    } else {
+      healedDocIdRef.current = doc.id;
     }
-  }, [doc?.id, doc?.documentType, doc?.extractedFields]);
+  }, [doc?.id]);
 
   if (!doc) {
     return (
