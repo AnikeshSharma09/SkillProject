@@ -222,7 +222,12 @@ export function DocumentUploadModal({
       } else if (file.type.startsWith("image/")) {
         try {
           const { recognize } = await import("tesseract.js");
-          const ocrData = await recognize(file, "eng");
+          // Add timeout so tesseract never hangs indefinitely if language download stalls
+          const ocrPromise = recognize(file, "eng");
+          const timeoutPromise = new Promise<{ data?: { text?: string } }>((_, reject) =>
+            setTimeout(() => reject(new Error("OCR timeout")), 3500)
+          );
+          const ocrData = await Promise.race([ocrPromise, timeoutPromise]);
           if (ocrData?.data?.text && ocrData.data.text.trim().length > 10) {
             extractedText = ocrData.data.text;
           }

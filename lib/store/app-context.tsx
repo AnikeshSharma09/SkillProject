@@ -27,6 +27,7 @@ import {
   SAMPLE_AUDIT_LOGS,
   SAMPLE_PAYMENTS,
 } from "./demo-data";
+import { healDocumentItem } from "@/lib/ai/document-processor";
 import {
   generateChecksum,
   generateIdempotencyKey,
@@ -167,7 +168,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (savedDocs) {
         const parsed = JSON.parse(savedDocs);
         if (Array.isArray(parsed)) {
-          setDocuments(parsed);
+          const sanitizedDocs = parsed.map((d: DocumentItem) => healDocumentItem(d));
+          setDocuments(sanitizedDocs);
+          try {
+            localStorage.setItem("aiflow_documents", JSON.stringify(sanitizedDocs));
+          } catch {}
         }
       }
 
@@ -527,16 +532,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addDocument = (doc: DocumentItem) => {
-    setDocuments((prev) => [doc, ...prev]);
-    logAudit("DOCUMENT_UPLOADED", "DOCUMENT", `Uploaded document ${doc.name}`, {
-      documentId: doc.id,
-      documentName: doc.name,
+    const healedDoc = healDocumentItem(doc);
+    setDocuments((prev) => [healedDoc, ...prev]);
+    logAudit("DOCUMENT_UPLOADED", "DOCUMENT", `Uploaded document ${healedDoc.name}`, {
+      documentId: healedDoc.id,
+      documentName: healedDoc.name,
     });
     addNotification({
       title: "Document Ingested",
-      message: `"${doc.name}" processed (${doc.documentType}, ${(doc.overallConfidence * 100).toFixed(0)}% confidence).`,
+      message: `"${healedDoc.name}" processed (${healedDoc.documentType}, ${(healedDoc.overallConfidence * 100).toFixed(0)}% confidence).`,
       type: "workflow",
-      documentId: doc.id,
+      documentId: healedDoc.id,
     });
   };
 

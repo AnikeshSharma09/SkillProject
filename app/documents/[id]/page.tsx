@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, use, useMemo } from "react";
+import React, { useState, useEffect, use, useMemo } from "react";
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import {
@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
 import { ExtractedField, BoundingBox, DocumentCategory } from "@/types";
-import { processDocumentContent, generateDocumentSummary } from "@/lib/ai/document-processor";
+import { processDocumentContent, generateDocumentSummary, healDocumentItem } from "@/lib/ai/document-processor";
 import { formatBytes, formatTimeAgo, formatCurrency } from "@/lib/utils";
 import {
   SUPPORTED_LANGUAGES,
@@ -86,6 +86,30 @@ export default function DocumentDetailPage({
       timestamp: "Just now",
     },
   ]);
+
+  // Auto-heal distorted entity extractions, misclassified reports, and legacy mock fields
+  useEffect(() => {
+    if (!doc) return;
+    const healed = healDocumentItem(doc);
+    const isDifferent =
+      healed.documentType !== doc.documentType ||
+      healed.rawOcrText !== doc.rawOcrText ||
+      healed.summary !== doc.summary ||
+      healed.dueDate !== doc.dueDate ||
+      JSON.stringify(healed.extractedFields) !== JSON.stringify(doc.extractedFields);
+
+    if (isDifferent) {
+      updateDocument(doc.id, {
+        documentType: healed.documentType,
+        classificationConfidence: healed.classificationConfidence,
+        overallConfidence: healed.overallConfidence,
+        extractedFields: healed.extractedFields,
+        rawOcrText: healed.rawOcrText,
+        summary: healed.summary,
+        dueDate: healed.dueDate,
+      });
+    }
+  }, [doc?.id, doc?.documentType, doc?.extractedFields]);
 
   if (!doc) {
     return (
@@ -240,11 +264,14 @@ export default function DocumentDetailPage({
                 const newType = e.target.value as DocumentCategory;
                 const reprocessed = await processDocumentContent(
                   doc.name,
-                  doc.rawOcrText || (newType === "Invoice" ? "TAX INVOICE\nInvoice no: 51109338\nDate of issue: 04/13/2013\nSeller: Andrews, Kirby and Valdez\nClient: Becker Ltd\nTax id: 945-82-2137\nTotal: $6,204.19\nVAT: $564.02" : undefined)
+                  doc.rawOcrText
                 );
                 updateDocument(doc.id, {
                   documentType: newType,
                   extractedFields: reprocessed.extractedFields,
+                  rawOcrText: reprocessed.rawOcrText,
+                  summary: reprocessed.summary,
+                  dueDate: reprocessed.dueDate,
                 });
                 logAudit("DOCUMENT_RECLASSIFIED", "DOCUMENT", `Reclassified ${doc.name} as ${newType}`, {
                   documentId: doc.id,
@@ -802,16 +829,15 @@ export default function DocumentDetailPage({
                 <button
                   type="button"
                   onClick={async () => {
-                    const isWilsonInvoice = doc.name.includes("76778037") || doc.name.includes("wilson") || doc.name.includes("5xhq") || !doc.name.includes("batch1-0001");
-                    const ocrPayload = isWilsonInvoice
-                      ? "TAX INVOICE\nInvoice no: 76778037\nDate of issue: 03/15/2021\nSeller: Wilson-Todd\nClient: Smith and Sons\nTax id: 962-88-2450\nIBAN: GB54DBNW37102687540169\nNet worth: $690.11\nVAT (10%): $69.01\nTotal: $759.12\nTotal Payable: USD 759.12"
-                      : "TAX INVOICE\nInvoice no: 51109338\nDate of issue: 04/13/2013\nSeller: Andrews, Kirby and Valdez\nClient: Becker Ltd\nTax id: 945-82-2137\nIBAN: GB75MCKL06811367619257\nNet worth: $5,640.17\nVAT (10%): $564.02\nTotal: $6,204.19\nTotal Payable: USD 6204.19";
-                    
-                    const reprocessed = await processDocumentContent(doc.name, ocrPayload);
+                    const reprocessed = await processDocumentContent(doc.name, doc.rawOcrText);
                     updateDocument(doc.id, {
-                      documentType: "Invoice",
+                      documentType: reprocessed.documentType,
+                      classificationConfidence: reprocessed.classificationConfidence,
+                      overallConfidence: reprocessed.overallConfidence,
                       rawOcrText: reprocessed.rawOcrText,
                       extractedFields: reprocessed.extractedFields,
+                      summary: reprocessed.summary,
+                      dueDate: reprocessed.dueDate,
                     });
                     logAudit("OCR_RESYNC", "DOCUMENT", `Resynced OCR entities for ${doc.name}`, {
                       documentId: doc.id,
@@ -820,7 +846,7 @@ export default function DocumentDetailPage({
                   className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] shadow-2xs transition-all flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
-                  <span>Sync Image OCR ($759.12 USD)</span>
+                  <span>Resync &amp; Recalculate OCR</span>
                 </button>
               </div>
 
