@@ -563,7 +563,11 @@ export default function DocumentDetailPage({
                             Vendor / Supplier:
                           </span>
                           <strong className="text-slate-900 block font-bold text-sm">
-                            {getFieldValue(["vendor", "supplier", "merchant"], "Enterprise Supplier Ltd")}
+                            {getFieldValue(["vendor", "supplier", "merchant"]) || (
+                              <span className="text-amber-600 font-normal italic text-xs">
+                                — (Missing Vendor)
+                              </span>
+                            )}
                           </strong>
                           <span className="text-slate-500 text-[10px] block">
                             GSTIN: 27AABCH4920E1ZF
@@ -574,19 +578,31 @@ export default function DocumentDetailPage({
                           <div>
                             <span className="text-slate-400">Invoice No: </span>
                             <strong className="font-mono text-slate-900 text-xs">
-                              {getFieldValue(["invoice_number", "number"], "INV-2026-1024")}
+                              {getFieldValue(["invoice_number", "number"]) || (
+                                <span className="text-amber-600 font-normal italic text-xs">
+                                  — (Missing)
+                                </span>
+                              )}
                             </strong>
                           </div>
                           <div>
                             <span className="text-slate-400">Date: </span>
                             <span className="text-slate-700">
-                              {getFieldValue(["invoice_date", "date"], "2026-09-24")}
+                              {getFieldValue(["invoice_date", "date"]) || (
+                                <span className="text-amber-600 font-normal italic text-xs">
+                                  — (Missing)
+                                </span>
+                              )}
                             </span>
                           </div>
                           <div>
                             <span className="text-slate-400">Due Date: </span>
                             <span className="text-slate-700 font-semibold">
-                              {getFieldValue(["due_date", "due"], "2026-10-04")}
+                              {getFieldValue(["due_date", "due"]) || (
+                                <span className="text-amber-600 font-normal italic text-xs">
+                                  — (Missing)
+                                </span>
+                              )}
                             </span>
                           </div>
                         </div>
@@ -606,9 +622,15 @@ export default function DocumentDetailPage({
                               <tr key={f.id}>
                                 <td className="py-2 font-medium text-slate-700">{f.fieldLabel}</td>
                                 <td className="py-2 text-right font-bold text-slate-900">
-                                  {f.dataType === "currency"
-                                    ? formatCurrency(f.extractedValue, documentCurrency)
-                                    : f.extractedValue}
+                                  {f.extractedValue ? (
+                                    f.dataType === "currency"
+                                      ? formatCurrency(f.extractedValue, documentCurrency)
+                                      : f.extractedValue
+                                  ) : (
+                                    <span className="text-amber-600 italic font-normal text-[10px]">
+                                      — (Missing)
+                                    </span>
+                                  )}
                                 </td>
                               </tr>
                             ))}
@@ -621,19 +643,25 @@ export default function DocumentDetailPage({
                         <div className="flex justify-between text-slate-500">
                           <span>Subtotal</span>
                           <span className="font-mono">
-                            {formatCurrency(getFieldValue(["subtotal"], "690.11"), documentCurrency)}
+                            {getFieldValue(["subtotal"])
+                              ? formatCurrency(getFieldValue(["subtotal"]), documentCurrency)
+                              : "—"}
                           </span>
                         </div>
                         <div className="flex justify-between text-slate-500">
                           <span>Tax / VAT</span>
                           <span className="font-mono">
-                            {formatCurrency(getFieldValue(["tax", "gst", "vat"], "69.01"), documentCurrency)}
+                            {getFieldValue(["tax", "gst", "vat"])
+                              ? formatCurrency(getFieldValue(["tax", "gst", "vat"]), documentCurrency)
+                              : "—"}
                           </span>
                         </div>
                         <div className="flex justify-between text-slate-900 font-black text-sm pt-2 border-t">
                           <span>Total Amount</span>
                           <span className="text-blue-600 font-mono font-black">
-                            {formatCurrency(getFieldValue(["total", "amount"], "759.12"), documentCurrency)}
+                            {getFieldValue(["total", "amount"])
+                              ? formatCurrency(getFieldValue(["total", "amount"]), documentCurrency)
+                              : <span className="text-amber-600 italic font-normal text-xs">— (Pending Review)</span>}
                           </span>
                         </div>
                       </div>
@@ -905,9 +933,15 @@ export default function DocumentDetailPage({
                               )}
                             </div>
                             <div className="text-xs font-bold text-slate-900 dark:text-white truncate mt-0.5">
-                              {field.dataType === "currency"
-                                ? formatCurrency(field.extractedValue, documentCurrency)
-                                : field.extractedValue}
+                              {field.extractedValue ? (
+                                field.dataType === "currency"
+                                  ? formatCurrency(field.extractedValue, documentCurrency)
+                                  : field.extractedValue
+                              ) : (
+                                <span className="text-amber-600 dark:text-amber-400 font-normal italic text-[11px]">
+                                  — (Missing / Click pencil to edit)
+                                </span>
+                              )}
                             </div>
                           </div>
 
@@ -917,25 +951,29 @@ export default function DocumentDetailPage({
                               <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div
                                   className={`h-full rounded-full ${
-                                    isHigh
+                                    percentage === 0
+                                      ? "bg-red-500"
+                                      : isHigh
                                       ? "bg-emerald-500"
                                       : isMed
                                       ? "bg-indigo-500"
                                       : "bg-amber-500"
                                   }`}
-                                  style={{ width: `${percentage}%` }}
+                                  style={{ width: `${Math.max(percentage, 5)}%` }}
                                 />
                               </div>
                               <span
                                 className={`text-[10px] font-bold tabular-nums font-mono ${
-                                  isHigh
+                                  percentage === 0
+                                    ? "text-red-500 dark:text-red-400"
+                                    : isHigh
                                     ? "text-emerald-600 dark:text-emerald-400"
                                     : isMed
                                     ? "text-indigo-600 dark:text-indigo-400"
                                     : "text-amber-600 dark:text-amber-400"
                                 }`}
                               >
-                                {percentage}%
+                                {percentage === 0 ? "Missing (0%)" : `${percentage}%`}
                               </span>
                             </div>
 

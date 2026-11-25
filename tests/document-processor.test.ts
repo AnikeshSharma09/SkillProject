@@ -30,12 +30,49 @@ GST (18%): INR 13,050.00`;
   });
 
   it("should classify batch scanner invoices and extract vendor and amounts", async () => {
-    const result = await processDocumentContent("batch1-0001.jpg");
+    const batchOcrText = `TAX INVOICE\nInvoice no: 51109338\nDate of issue: 04/13/2013\nSeller: Andrews, Kirby and Valdez\nClient: Becker Ltd\nTax id: 945-82-2137\nIBAN: GB75MCKL06811367619257\nNet worth: $5,640.17\nVAT (10%): $564.02\nTotal: $6,204.19\nTotal Payable: USD 6204.19`;
+    const result = await processDocumentContent("batch1-0001.jpg", batchOcrText);
     expect(result.documentType).toBe("Invoice");
     const vendorField = result.extractedFields.find((f) => f.fieldName === "vendor");
     expect(vendorField?.extractedValue).toBe("Andrews, Kirby and Valdez");
     const totalField = result.extractedFields.find((f) => f.fieldName === "total");
     expect(totalField?.extractedValue).toBe("6204.19");
+  });
+
+  it("should keep missing entities blank with 0 confidence and route to REVIEW_REQUIRED without injecting fake fallback values", async () => {
+    // Blank scan with no recognized text
+    const blankResult = await processDocumentContent("scan_empty.png", "");
+    expect(blankResult.documentType).toBe("Invoice");
+    expect(blankResult.suggestedStatus).toBe("REVIEW_REQUIRED");
+    expect(blankResult.rawOcrText).toBe("");
+
+    const vendorF = blankResult.extractedFields.find((f) => f.fieldName === "vendor");
+    expect(vendorF?.extractedValue).toBe("");
+    expect(vendorF?.confidence).toBe(0);
+
+    const totalF = blankResult.extractedFields.find((f) => f.fieldName === "total");
+    expect(totalF?.extractedValue).toBe("");
+    expect(totalF?.confidence).toBe(0);
+
+    const invNumF = blankResult.extractedFields.find((f) => f.fieldName === "invoice_number");
+    expect(invNumF?.extractedValue).toBe("");
+    expect(invNumF?.confidence).toBe(0);
+
+    // Partial invoice with only vendor and total, missing invoice number and tax
+    const partialOcr = "TAX INVOICE\nSeller: Delta Systems\nTotal: $450.00";
+    const partialResult = await processDocumentContent("partial_invoice.pdf", partialOcr);
+    expect(partialResult.suggestedStatus).toBe("REVIEW_REQUIRED");
+
+    const partialVendor = partialResult.extractedFields.find((f) => f.fieldName === "vendor");
+    expect(partialVendor?.extractedValue).toBe("Delta Systems");
+    expect(partialVendor?.confidence).toBeGreaterThan(0.9);
+
+    const partialTotal = partialResult.extractedFields.find((f) => f.fieldName === "total");
+    expect(partialTotal?.extractedValue).toBe("450");
+
+    const partialInvNum = partialResult.extractedFields.find((f) => f.fieldName === "invoice_number");
+    expect(partialInvNum?.extractedValue).toBe("");
+    expect(partialInvNum?.confidence).toBe(0);
   });
 
   it("should extract two-column seller/client invoices with European decimal formatting without getting tripped by Tax ID or percentage rates", async () => {

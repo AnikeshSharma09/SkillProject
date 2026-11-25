@@ -222,13 +222,13 @@ export function DocumentUploadModal({
       } else if (file.type.startsWith("image/")) {
         try {
           const { recognize } = await import("tesseract.js");
-          // Add timeout so tesseract never hangs indefinitely if language download stalls
+          // Allow up to 15s for client-side WASM OCR and traineddata download
           const ocrPromise = recognize(file, "eng");
           const timeoutPromise = new Promise<{ data?: { text?: string } }>((_, reject) =>
-            setTimeout(() => reject(new Error("OCR timeout")), 3500)
+            setTimeout(() => reject(new Error("OCR timeout")), 15000)
           );
           const ocrData = await Promise.race([ocrPromise, timeoutPromise]);
-          if (ocrData?.data?.text && ocrData.data.text.trim().length > 10) {
+          if (ocrData?.data?.text && ocrData.data.text.trim().length > 0) {
             extractedText = ocrData.data.text;
           }
         } catch (ocrErr) {
