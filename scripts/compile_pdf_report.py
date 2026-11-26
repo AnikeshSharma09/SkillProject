@@ -31,6 +31,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, Preformatted, Flowable, Image as RLImage
 )
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 def int_to_roman(n):
     val = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
@@ -48,6 +49,7 @@ class NumberedCanvas(canvas.Canvas):
     ch1_start_page = None
 
     def __init__(self, *args, **kwargs):
+        kwargs['pageCompression'] = 0
         super(NumberedCanvas, self).__init__(*args, **kwargs)
         self._saved_page_states = []
         self.total_pages = 0
@@ -103,6 +105,96 @@ class HeadingTracker(Flowable):
             if NumberedCanvas.ch1_start_page is None:
                 NumberedCanvas.ch1_start_page = page
         print(f"TRACK: {self.title} -> Physical Page {page}")
+
+
+class TOCItem(Flowable):
+    """
+    Renders a Table of Contents / List of Tables / List of Figures line with:
+    - Left-aligned title text with hierarchical indentation
+    - Clean multi-line wrapping if title is long
+    - Dynamically computed dot leader ('. ') filling the exact remaining horizontal gap
+    - Mathematical right-aligned page number flush with the right margin (avail_w - page_w)
+    """
+    def __init__(self, title, page_str, avail_w, is_bold=False, indent=0):
+        super().__init__()
+        self.title = title.strip()
+        self.page_str = str(page_str).strip()
+        self.avail_w = avail_w
+        self.is_bold = is_bold
+        self.indent = indent
+        self.font_name = 'Times-Bold' if is_bold else 'Times-Roman'
+        self.font_size = 11
+        self.leading = 14.5
+
+        page_num_w = stringWidth(self.page_str, self.font_name, self.font_size)
+        min_dot_gap = 28.0  # Room for dot leader
+        max_w_non_last = self.avail_w - self.indent - 8
+        max_w_last = self.avail_w - self.indent - page_num_w - min_dot_gap
+
+        # Word wrap the title
+        words = self.title.split()
+        lines = []
+        cur_line = []
+        cur_w = 0
+        for w in words:
+            word_w = stringWidth(w + ' ', self.font_name, self.font_size)
+            if cur_w + word_w < max_w_non_last:
+                cur_line.append(w)
+                cur_w += word_w
+            else:
+                if cur_line:
+                    lines.append(' '.join(cur_line))
+                cur_line = [w]
+                cur_w = word_w
+        if cur_line:
+            lines.append(' '.join(cur_line))
+
+        # Check if last line fits with room for dots and page number
+        if lines:
+            last_w = stringWidth(lines[-1], self.font_name, self.font_size)
+            if last_w > max_w_last:
+                words_last = lines[-1].split()
+                if len(words_last) > 1:
+                    lines[-1] = ' '.join(words_last[:-1])
+                    lines.append(words_last[-1])
+
+        self.lines = lines if lines else [self.title]
+        self.height = len(self.lines) * self.leading
+        self.width = avail_w
+
+    def wrap(self, availWidth, availHeight):
+        return self.width, self.height
+
+    def draw(self):
+        canv = self.canv
+        canv.saveState()
+        canv.setFont(self.font_name, self.font_size)
+
+        page_w = stringWidth(self.page_str, self.font_name, self.font_size)
+        page_x = self.avail_w - page_w
+        num_lines = len(self.lines)
+
+        for idx, line_text in enumerate(self.lines):
+            line_y = (num_lines - 1 - idx) * self.leading + 2
+            canv.drawString(self.indent, line_y, line_text)
+
+            if idx == num_lines - 1:
+                # Draw page number strictly flush right
+                canv.drawString(page_x, line_y, self.page_str)
+
+                # Fill dots between title end and page number
+                last_w = stringWidth(line_text, self.font_name, self.font_size)
+                dots_start = self.indent + last_w + 6
+                dots_end = page_x - 6
+                dot_str = '. '
+                dot_w = stringWidth(dot_str, self.font_name, self.font_size)
+                num_dots = int((dots_end - dots_start) / dot_w)
+                if num_dots > 0:
+                    canv.setFillColor(colors.HexColor('#94a3b8'))
+                    canv.drawString(dots_start, line_y, dot_str * num_dots)
+                    canv.setFillColor(colors.black)
+
+        canv.restoreState()
 
 def compile_pdf(docx_path, pdf_path):
     print(f"Reading source DOCX: {docx_path}...")
@@ -309,7 +401,8 @@ def compile_pdf(docx_path, pdf_path):
                             except Exception as e:
                                 print(f"Error loading image: {e}")
 
-            raw_text = p.text.strip()
+            orig_text = p.text
+            raw_text = orig_text.strip()
             if not raw_text:
                 continue
 
@@ -329,14 +422,25 @@ def compile_pdf(docx_path, pdf_path):
             if "\t" in raw_text:
                 parts = raw_text.split("\t")
                 if len(parts) >= 2:
-                    left_part = parts[0].strip().replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                    raw_title = parts[0]
                     right_part = parts[-1].strip()
-                    # Dots leader
-                    leader = ". " * max(5, int((avail_w - 180) / 10))
-                    story.append(Paragraph(
-                        f"<font name='Times-Roman'>{left_part}</font> <font color='#94a3b8'>{leader}</font> <b>{right_part}</b>",
-                        style_body
-                    ))
+
+                    # Indentation handling
+                    if orig_text.startswith("        ") or raw_title.startswith("        "):
+                        indent = 24
+                    elif orig_text.startswith("    ") or raw_title.startswith("    "):
+                        indent = 12
+                    else:
+                        indent = 0
+
+                    left_part = raw_title.strip()
+                    is_bold = left_part.startswith("CHAPTER") or left_part in [
+                        "ABSTRACT", "TABLE OF CONTENTS", "LIST OF TABLES", "LIST OF FIGURES",
+                        "APPENDIX: (as applicable)", "BIBLIOGRAPHY AND REFERENCE"
+                    ] or any(r.bold for r in p.runs[:2] if r.bold is not None)
+
+                    story.append(TOCItem(left_part, right_part, avail_w, is_bold=is_bold, indent=indent))
+                    story.append(Spacer(1, 1.5))
                 else:
                     story.append(Paragraph(clean_text, style_body))
                 continue
@@ -382,17 +486,6 @@ def compile_pdf(docx_path, pdf_path):
             elif raw_text.startswith("[") and re.match(r'^\[\d+\]', raw_text):
                 # Reference entry e.g. [1] ...
                 story.append(Paragraph(clean_text, style_bullet))
-
-            elif "\t" in raw_text and ("..." in raw_text or any(k in raw_text for k in ["CHAPTER", "Chapter", "Table", "Figure"])):
-                # TOC row
-                parts = raw_text.split("\t")
-                if len(parts) >= 2:
-                    left_part = parts[0].strip().replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                    right_part = parts[-1].strip()
-                    row_html = f"<table width='100%'><tr><td align='left'>{left_part}</td><td align='right'>{right_part}</td></tr></table>"
-                    story.append(Paragraph(left_part + " " + "." * max(10, 60 - len(left_part)) + " " + right_part, style_body))
-                else:
-                    story.append(Paragraph(clean_text, style_body))
 
             else:
                 story.append(Paragraph(clean_text, style_body))

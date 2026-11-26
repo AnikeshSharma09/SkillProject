@@ -475,7 +475,7 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
         r_t.font.size = Pt(11)
         if title.startswith("CHAPTER") or title in ["ABSTRACT", "TABLE OF CONTENTS", "LIST OF TABLES", "LIST OF FIGURES", "APPENDIX: (as applicable)", "BIBLIOGRAPHY AND REFERENCE"]:
             r_t.font.bold = True
-        p_row.paragraph_format.tab_stops.add_tab_stop(Inches(5.8), docx.enum.text.WD_TAB_ALIGNMENT.RIGHT, docx.enum.text.WD_TAB_LEADER.DOTS)
+        p_row.paragraph_format.tab_stops.add_tab_stop(Inches(5.75), docx.enum.text.WD_TAB_ALIGNMENT.RIGHT, docx.enum.text.WD_TAB_LEADER.DOTS)
         r_tab = p_row.add_run("\t")
         r_p = p_row.add_run(pg)
         r_p.font.name = 'Times New Roman'
@@ -517,7 +517,7 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
         r_t = p_row.add_run(title)
         r_t.font.name = 'Times New Roman'
         r_t.font.size = Pt(11)
-        p_row.paragraph_format.tab_stops.add_tab_stop(Inches(5.8), docx.enum.text.WD_TAB_ALIGNMENT.RIGHT, docx.enum.text.WD_TAB_LEADER.DOTS)
+        p_row.paragraph_format.tab_stops.add_tab_stop(Inches(5.75), docx.enum.text.WD_TAB_ALIGNMENT.RIGHT, docx.enum.text.WD_TAB_LEADER.DOTS)
         r_tab = p_row.add_run("\t")
         r_p = p_row.add_run(pg)
         r_p.font.name = 'Times New Roman'
@@ -570,7 +570,7 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
         r_t = p_row.add_run(title)
         r_t.font.name = 'Times New Roman'
         r_t.font.size = Pt(11)
-        p_row.paragraph_format.tab_stops.add_tab_stop(Inches(5.8), docx.enum.text.WD_TAB_ALIGNMENT.RIGHT, docx.enum.text.WD_TAB_LEADER.DOTS)
+        p_row.paragraph_format.tab_stops.add_tab_stop(Inches(5.75), docx.enum.text.WD_TAB_ALIGNMENT.RIGHT, docx.enum.text.WD_TAB_LEADER.DOTS)
         r_tab = p_row.add_run("\t")
         r_p = p_row.add_run(pg)
         r_p.font.name = 'Times New Roman'
