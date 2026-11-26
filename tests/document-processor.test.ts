@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { processDocumentContent, healDocumentItem } from "../lib/ai/document-processor";
+import {
+  processDocumentContent,
+  healDocumentItem,
+  inferDataType,
+  labelToFieldName,
+  extractDynamicKeyValuePairs,
+} from "../lib/ai/document-processor";
 import { DocumentItem } from "../types";
 
 describe("Document Processing & Extraction Pipeline", () => {
@@ -338,4 +344,138 @@ SUMMARY
     expect(healedDTax?.extractedValue).toBe("17.39");
   });
 
+  describe("Open-Domain Dynamic Key-Value Pair Extraction Engine", () => {
+    it("should infer data types accurately for dynamic values", () => {
+      expect(inferDataType("$1,450.00")).toBe("currency");
+      expect(inferDataType("INR 75,000")).toBe("currency");
+      expect(inferDataType("2026-10-14")).toBe("date");
+      expect(inferDataType("14/10/2026")).toBe("date");
+      expect(inferDataType("Oct 14, 2026")).toBe("date");
+      expect(inferDataType("42")).toBe("number");
+      expect(inferDataType("-10.5")).toBe("number");
+      expect(inferDataType("true")).toBe("boolean");
+      expect(inferDataType("No")).toBe("boolean");
+      expect(inferDataType("Acute Bronchitis")).toBe("string");
+      expect(inferDataType("Rajesh Sharma")).toBe("string");
+    });
+
+    it("should convert arbitrary human-readable labels into normalized snake_case identifiers", () => {
+      expect(labelToFieldName("Patient Name")).toBe("patient_name");
+      expect(labelToFieldName("Blood Group / Rh")).toBe("blood_group_rh");
+      expect(labelToFieldName("GSTIN / Tax ID")).toBe("gstin_tax_id");
+      expect(labelToFieldName("Waybill No.")).toBe("waybill_no");
+      expect(labelToFieldName("Container #")).toBe("container");
+    });
+
+    it("should dynamically extract open-domain entities from non-templated documents (e.g. Medical Report)", async () => {
+      const medicalReportText = `APOLLO HOSPITALS DISCHARGE SUMMARY
+Patient Name: Rajesh Sharma
+Patient ID: PID-99214
+Age: 42
+Admission Date: 2026-10-14
+Blood Group: B+
+Diagnosis: Acute Coronary Syndrome
+Consultant: Dr. Arvind Mehra (Cardiology)
+Room No: 402-B
+Estimated Bill: INR 1,45,000.00`;
+
+      const result = await processDocumentContent("patient_discharge_summary.pdf", medicalReportText);
+
+      expect(result.extractedFields.length).toBeGreaterThanOrEqual(8);
+
+      const patientName = result.extractedFields.find((f) => f.fieldName === "patient_name");
+      expect(patientName).toBeDefined();
+      expect(patientName?.extractedValue).toBe("Rajesh Sharma");
+      expect(patientName?.confidence).toBeGreaterThanOrEqual(0.95);
+
+      const patientId = result.extractedFields.find((f) => f.fieldName === "patient_id");
+      expect(patientId?.extractedValue).toBe("PID-99214");
+
+      const age = result.extractedFields.find((f) => f.fieldName === "age");
+      expect(age?.extractedValue).toBe("42");
+      expect(age?.dataType).toBe("number");
+
+      const bloodGroup = result.extractedFields.find((f) => f.fieldName === "blood_group");
+      expect(bloodGroup?.extractedValue).toBe("B+");
+
+      const diagnosis = result.extractedFields.find((f) => f.fieldName === "diagnosis");
+      expect(diagnosis?.extractedValue).toBe("Acute Coronary Syndrome");
+
+      const estBill = result.extractedFields.find((f) => f.fieldName === "estimated_bill");
+      expect(estBill?.extractedValue).toBe("INR 1,45,000.00");
+      expect(estBill?.dataType).toBe("currency");
+    });
+
+    it("should dynamically extract open-domain entities from shipping waybills without pre-planned schema", async () => {
+      const shippingWaybillText = `MAERSK LOGISTICS INTERNATIONAL
+Waybill Number: MAEU-9812489
+Vessel Name: Maersk Sentosa
+Port of Loading: Mumbai Port (INBOM)
+Port of Discharge: Rotterdam (NLRTM)
+Container No: MSCU-4910293
+Container Type: 40ft High Cube
+Gross Weight: 18450 kg
+Seal Number: SL-992014
+Customs Status: Cleared`;
+
+      const result = await processDocumentContent("waybill_delivery_pod.pdf", shippingWaybillText);
+
+      const waybill = result.extractedFields.find((f) => f.fieldName === "waybill_number");
+      expect(waybill?.extractedValue).toBe("MAEU-9812489");
+
+      const vessel = result.extractedFields.find((f) => f.fieldName === "vessel_name");
+      expect(vessel?.extractedValue).toBe("Maersk Sentosa");
+
+      const portLoading = result.extractedFields.find((f) => f.fieldName === "port_of_loading");
+      expect(portLoading?.extractedValue).toBe("Mumbai Port (INBOM)");
+
+      const container = result.extractedFields.find((f) => f.fieldName === "container_no");
+      expect(container?.extractedValue).toBe("MSCU-4910293");
+
+      const seal = result.extractedFields.find((f) => f.fieldName === "seal_number");
+      expect(seal?.extractedValue).toBe("SL-992014");
+    });
+
+    it("should discover and append custom dynamic attributes on invoices alongside canonical fields", async () => {
+      const invoiceWithExtras = `TAX INVOICE
+Supplier: Apex Global Tech Ltd
+Client: Vertex Solutions
+Invoice No: INV-2026-88
+Date: 2026-10-01
+Total Payable: USD 9,250.00
+PO Reference: PO-2026-991
+GSTIN / Tax ID: 27AABCA1234F1Z9
+Payment Terms: Net 30 Days
+Ship Via: FedEx Priority Freight
+Tracking No: 789214791024`;
+
+      const result = await processDocumentContent("Invoice_CustomExtras.pdf", invoiceWithExtras);
+
+      // Standard canonical fields
+      expect(result.extractedFields.find((f) => f.fieldName === "vendor")?.extractedValue).toBe("Apex Global Tech Ltd");
+      expect(result.extractedFields.find((f) => f.fieldName === "total")?.extractedValue).toBe("9250");
+      expect(result.extractedFields.find((f) => f.fieldName === "invoice_number")?.extractedValue).toBe("INV-2026-88");
+
+      // Dynamically discovered un-preplanned fields
+      const poRef = result.extractedFields.find((f) => f.fieldName === "po_reference");
+      expect(poRef).toBeDefined();
+      expect(poRef?.extractedValue).toBe("PO-2026-991");
+
+      const gstin = result.extractedFields.find((f) => f.fieldName === "gstin_tax_id");
+      expect(gstin).toBeDefined();
+      expect(gstin?.extractedValue).toBe("27AABCA1234F1Z9");
+
+      const paymentTerms = result.extractedFields.find((f) => f.fieldName === "payment_terms");
+      expect(paymentTerms).toBeDefined();
+      expect(paymentTerms?.extractedValue).toBe("Net 30 Days");
+
+      const shipVia = result.extractedFields.find((f) => f.fieldName === "ship_via");
+      expect(shipVia).toBeDefined();
+      expect(shipVia?.extractedValue).toBe("FedEx Priority Freight");
+
+      const tracking = result.extractedFields.find((f) => f.fieldName === "tracking_no");
+      expect(tracking).toBeDefined();
+      expect(tracking?.extractedValue).toBe("789214791024");
+    });
+  });
 });

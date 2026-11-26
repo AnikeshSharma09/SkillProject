@@ -21,6 +21,199 @@ export async function processDocumentContent(
   return processDocumentContentSync(fileName, rawText);
 }
 
+/**
+ * Infers the logical data type of an extracted value.
+ */
+export function inferDataType(value: string): 'string' | 'number' | 'date' | 'currency' | 'boolean' {
+  const trimmed = value.trim();
+  if (!trimmed) return 'string';
+
+  // Boolean
+  if (/^(true|false|yes|no)$/i.test(trimmed)) {
+    return 'boolean';
+  }
+
+  // Currency: symbol or ISO code present with numbers
+  if (
+    /^[\$€£₹¥]\s*[\d,]+(?:\.\d+)?$/i.test(trimmed) ||
+    (/\b(?:USD|EUR|GBP|INR|JPY|CAD|AUD|CHF)\b/i.test(trimmed) && /\d/.test(trimmed))
+  ) {
+    return 'currency';
+  }
+
+  // Date: standard date formats
+  if (
+    /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$/.test(trimmed) ||
+    /^\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}$/.test(trimmed) ||
+    /^(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}$/i.test(trimmed)
+  ) {
+    return 'date';
+  }
+
+  // Number: pure integer or decimal (with optional comma thousands)
+  if (/^-?\d{1,3}(?:,\d{3})*(?:\.\d+)?$/.test(trimmed) || /^-?\d+(?:\.\d+)?$/.test(trimmed)) {
+    return 'number';
+  }
+
+  return 'string';
+}
+
+/**
+ * Converts a human-readable field label into a normalized snake_case fieldName identifier.
+ */
+export function labelToFieldName(label: string): string {
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40) || "field";
+}
+
+/**
+ * Open-Domain Dynamic Key-Value Pair (KVP) Extractor.
+ * Parses raw OCR text to discover arbitrary entities, form fields, and attributes
+ * without requiring a pre-planned schema.
+ */
+export function extractDynamicKeyValuePairs(
+  text: string,
+  docId: string,
+  existingFieldNames: Set<string> = new Set()
+): ExtractedField[] {
+  if (!text || !text.trim()) return [];
+
+  const dynamicFields: ExtractedField[] = [];
+  const seenKeys = new Set<string>();
+
+  // Helper to test if a key was already captured or is an alias of a standard field
+  const isDuplicateOrCanonical = (fieldName: string): boolean => {
+    const fLower = fieldName.toLowerCase();
+    if (existingFieldNames.has(fLower) || seenKeys.has(fLower)) return true;
+
+    // Canonical alias mappings to prevent redundant duplication
+    const aliases: Record<string, string[]> = {
+      vendor: ["seller", "supplier", "merchant", "vendor", "from", "vendor_name"],
+      client: ["buyer", "customer", "client", "to", "bill_to", "client_name"],
+      invoice_number: ["invoice_no", "inv_no", "invoice_num", "invoice_number", "bill_no", "invoice_id"],
+      invoice_date: ["date", "date_of_issue", "issue_date", "invoice_date"],
+      due_date: ["due", "payment_due", "due_date"],
+      total: ["total", "gross_worth", "total_payable", "total_amount", "amount_due", "grand_total"],
+      subtotal: ["subtotal", "net_worth", "sub_total"],
+      tax: ["tax", "vat", "gst", "igst", "cgst", "sgst"],
+      currency: ["currency"],
+    };
+
+    for (const [canon, aliasList] of Object.entries(aliases)) {
+      if (existingFieldNames.has(canon) && (aliasList.includes(fLower) || fLower === canon)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  let fieldCounter = 1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Candidate segments: split line by multiple tabs or 2+ spaces if multiple colons exist
+    let segments = [line];
+    if (line.includes(":") && (line.match(/:/g) || []).length > 1 && (/\s{2,}|\t/.test(line))) {
+      segments = line.split(/\s{2,}|\t/);
+    }
+
+    for (const seg of segments) {
+      const trimmedSeg = seg.trim();
+      if (!trimmedSeg) continue;
+
+      // 1. Delimited pattern: "Key: Value" or "Key = Value"
+      const delimMatch = trimmedSeg.match(/^([A-Za-z0-9\s/&()#._-]{2,35})\s*[:=]\s*(.+)$/);
+      if (delimMatch) {
+        const rawLabel = delimMatch[1].trim();
+        const rawVal = delimMatch[2].trim();
+
+        // Discard false positives: URLs, timestamps, headers
+        if (
+          /^(?:http|https|ftp|step|note|warning|disclaimer|items|summary|page)$/i.test(rawLabel) ||
+          /^\d{1,2}:\d{2}/.test(trimmedSeg) || // Time: 10:30
+          rawLabel.length < 2 ||
+          rawVal.length < 1 ||
+          rawVal.length > 150
+        ) {
+          continue;
+        }
+
+        let fieldName = labelToFieldName(rawLabel);
+        if (isDuplicateOrCanonical(fieldName)) continue;
+
+        if (seenKeys.has(fieldName)) {
+          let suffix = 2;
+          while (seenKeys.has(`${fieldName}_${suffix}`)) suffix++;
+          fieldName = `${fieldName}_${suffix}`;
+        }
+
+        const dType = inferDataType(rawVal);
+        seenKeys.add(fieldName);
+
+        dynamicFields.push({
+          id: `dyn-${fieldCounter++}`,
+          documentId: docId,
+          fieldName,
+          fieldLabel: rawLabel,
+          extractedValue: rawVal,
+          dataType: dType,
+          confidence: 0.96,
+          sourceBbox: { page: 1, x: 0.1, y: Math.min(0.9, 0.1 + fieldCounter * 0.05), w: 0.8, h: 0.035 },
+        });
+        continue;
+      }
+
+      // 2. Columnar 2-column layout without colons: "Key        Value"
+      if (/\s{3,}|\t/.test(trimmedSeg)) {
+        const colParts = trimmedSeg.split(/\s{3,}|\t/);
+        if (colParts.length === 2) {
+          const colLabel = colParts[0].trim();
+          const colVal = colParts[1].trim();
+
+          if (
+            colLabel.length >= 2 &&
+            colLabel.length <= 30 &&
+            colVal.length >= 1 &&
+            colVal.length <= 80 &&
+            !/^(?:http|https|items|summary|total|no\.|description|qty|price|amount)$/i.test(colLabel) &&
+            !/^[0-9.,\s]+$/.test(colLabel)
+          ) {
+            let fieldName = labelToFieldName(colLabel);
+            if (!isDuplicateOrCanonical(fieldName)) {
+              if (seenKeys.has(fieldName)) {
+                let suffix = 2;
+                while (seenKeys.has(`${fieldName}_${suffix}`)) suffix++;
+                fieldName = `${fieldName}_${suffix}`;
+              }
+
+              const dType = inferDataType(colVal);
+              seenKeys.add(fieldName);
+
+              dynamicFields.push({
+                id: `dyn-${fieldCounter++}`,
+                documentId: docId,
+                fieldName,
+                fieldLabel: colLabel,
+                extractedValue: colVal,
+                dataType: dType,
+                confidence: 0.92,
+                sourceBbox: { page: 1, x: 0.1, y: Math.min(0.9, 0.1 + fieldCounter * 0.05), w: 0.8, h: 0.035 },
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return dynamicFields;
+}
+
 export function processDocumentContentSync(
   fileName: string,
   rawText?: string
@@ -661,36 +854,54 @@ export function processDocumentContentSync(
       }
     );
   } else {
-    // Generic field extraction
-    extractedFields.push(
-      {
-        id: `f-1`,
-        documentId: docId,
-        fieldName: "title",
-        fieldLabel: "Document Title",
-        extractedValue: fileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "),
-        dataType: "string",
-        confidence: 0.94,
-      },
-      {
-        id: `f-2`,
-        documentId: docId,
-        fieldName: "date_extracted",
-        fieldLabel: "Date Extracted",
-        extractedValue: new Date().toISOString().split("T")[0],
-        dataType: "date",
-        confidence: 0.96,
-      },
-      {
-        id: `f-3`,
-        documentId: docId,
-        fieldName: "entity_category",
-        fieldLabel: "Category",
-        extractedValue: detectedType,
-        dataType: "string",
-        confidence: classConfidence,
-      }
-    );
+    // Open-Domain Dynamic Field Extraction for all non-templated document categories
+    // (Medical Form, Delivery Note, Bank Statement, Tax Document, Resume, Insurance, Other, etc.)
+    const dynamicFields = extractDynamicKeyValuePairs(text, docId);
+    if (dynamicFields.length > 0) {
+      extractedFields.push(...dynamicFields);
+    } else {
+      // Fallback only if no key-value pairs or structured entities were detected in raw OCR text
+      extractedFields.push(
+        {
+          id: `f-1`,
+          documentId: docId,
+          fieldName: "title",
+          fieldLabel: "Document Title",
+          extractedValue: fileName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "),
+          dataType: "string",
+          confidence: 0.94,
+        },
+        {
+          id: `f-2`,
+          documentId: docId,
+          fieldName: "date_extracted",
+          fieldLabel: "Date Extracted",
+          extractedValue: new Date().toISOString().split("T")[0],
+          dataType: "date",
+          confidence: 0.96,
+        },
+        {
+          id: `f-3`,
+          documentId: docId,
+          fieldName: "entity_category",
+          fieldLabel: "Category",
+          extractedValue: detectedType,
+          dataType: "string",
+          confidence: classConfidence,
+        }
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Secondary Open-Domain Dynamic Discovery Pass:
+  // Discovers and appends any arbitrary custom entities, un-preplanned form fields,
+  // or domain-specific keys that were printed on the document but not in standard templates.
+  // -------------------------------------------------------------------------
+  const existingFieldNames = new Set(extractedFields.map((f) => f.fieldName.toLowerCase()));
+  const dynamicExtras = extractDynamicKeyValuePairs(text, docId, existingFieldNames);
+  if (dynamicExtras.length > 0) {
+    extractedFields.push(...dynamicExtras);
   }
 
   // Calculate composite confidence
