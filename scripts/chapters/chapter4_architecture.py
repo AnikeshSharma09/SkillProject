@@ -16,6 +16,7 @@ def write_chapter4(doc, h):
     add_subsection_heading = h['add_subsection_heading']
     add_table_custom = h['add_table_custom']
     add_figure_box = h['add_figure_box']
+    add_figure_image = h.get('add_figure_image', add_figure_box)
 
     add_chapter_heading(4, "System Architecture & Design")
 
@@ -374,3 +375,34 @@ def write_chapter4(doc, h):
         "+-----------------------------------------------+-------------------------------+"
     ]
     add_figure_box("4.8", "Document Studio Multi-Pane UI/UX Layout Wireframe", f48_lines)
+
+    add_p(
+        "Figure 4.9 demonstrates the actual production implementation of the Document Studio interface processing a commercial tax invoice "
+        "(batch2-1056.jpg). The interface is structured to maximize operator productivity while eliminating cognitive fatigue. In the upper header, "
+        "the document taxonomy tag ('Invoice'), processing state ('READY'), and overall optical confidence ('98% Confidence') provide instantaneous "
+        "status awareness. Action triggers allow operators to share document links, download raw binaries, execute autonomous DAG workflows, or "
+        "trigger high-value payment disbursements directly."
+    )
+    add_p(
+        "The right-hand control studio features the AI Executive Summary briefing card, providing a 4-to-5 line concise briefing that summarizes "
+        "vendor legitimacy, total obligations, itemized delivery scopes, commercial settlement deadlines, and automated reconciliation verdicts. "
+        "The integrated language switcher enables instant translation across six major languages. Below the summary, the Optical Entity Sync panel "
+        "renders extracted fields (Vendor Name, Invoice Number, Invoice Date, Due Date, Subtotal, Tax) alongside real-time color-coded confidence meters. "
+        "Missing fields are highlighted with dashed borders and 0% confidence, inviting immediate human-in-the-loop verification."
+    )
+    add_figure_image("4.9", "Document Studio UI/UX Screen Architecture", "report_assets/03_document_studio_extraction.png")
+
+    add_p(
+        "Figure 4.10 depicts the Visual Directed Acyclic Graph (DAG) Workflow Builder canvas (`app/workflows/page.tsx`). Engineered using a "
+        "responsive SVG graph engine, the canvas visualizes automated business pipelines as interconnected, typed execution nodes. "
+        "The workflow progresses from left to right: Document Ingestion triggers Optical OCR Parsing, which feeds into Deterministic Business Rule "
+        "Validation Gates. Transactions exceeding predefined monetary thresholds (such as 50,000 INR) automatically branch into Role-Based "
+        "Maker-Checker Approval Nodes before routing to Payment Disbursement and Webhook Notification endpoints."
+    )
+    add_p(
+        "A central innovation of the workflow interface is the Natural Language Prompt-to-DAG Generator located above the canvas. Operators and "
+        "process designers can enter unstructured enterprise requirements (for example, 'Route high-value international invoices over $10,000 to "
+        "Finance Director and notify Slack #finance'). The generative module parses these constraints into topological node-and-edge definitions, "
+        "compiles execution dependencies, and renders the executable graph in real time, democratizing enterprise automation for non-technical managers."
+    )
+    add_figure_image("4.10", "Visual DAG Workflow Builder Canvas Architecture", "report_assets/04_workflow_dag_canvas.png")

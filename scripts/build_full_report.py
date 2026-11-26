@@ -271,6 +271,36 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
         r_cap.font.size = Pt(11)
         r_cap.font.bold = True
 
+    def add_figure_image(caption_num, caption_title, image_path, width_inches=5.6):
+        p_img = doc.add_paragraph()
+        p_img.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_img.paragraph_format.space_before = Pt(8)
+        p_img.paragraph_format.space_after = Pt(4)
+        r_img = p_img.add_run()
+        
+        resolved_path = image_path
+        if not os.path.isabs(image_path):
+            candidate1 = os.path.join(os.getcwd(), image_path)
+            candidate2 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), image_path)
+            if os.path.exists(candidate1):
+                resolved_path = candidate1
+            elif os.path.exists(candidate2):
+                resolved_path = candidate2
+
+        if os.path.exists(resolved_path):
+            r_img.add_picture(resolved_path, width=Inches(width_inches))
+        else:
+            print(f"WARNING: Image not found at {resolved_path}")
+
+        p_cap = doc.add_paragraph()
+        p_cap.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_cap.paragraph_format.space_before = Pt(4)
+        p_cap.paragraph_format.space_after = Pt(12)
+        r_cap = p_cap.add_run(f"Figure {caption_num}: {caption_title}")
+        r_cap.font.name = 'Times New Roman'
+        r_cap.font.size = Pt(11)
+        r_cap.font.bold = True
+
     def add_code_snippet(code_text):
         table = doc.add_table(rows=1, cols=1)
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -401,28 +431,38 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
         ("    4.3 UML / Data Modeling Diagrams (Use Case, Class, Sequence, ER Diagrams)", "24"),
         ("    4.4 Database / Storage Schema Design", "26"),
         ("    4.5 User Interface (UI/UX) Wireframes & Screen Layouts", "28"),
-        ("CHAPTER 5: METHODOLOGY & IMPLEMENTATION", "30"),
-        ("    5.1 Development Methodology", "30"),
-        ("    5.2 Module-Wise Implementation Details", "30"),
-        ("    5.3 Core Algorithms, Logic, or Workflow Integration", "32"),
-        ("    5.4 Key Code Snippets & API / Hardware Integration Highlights", "33"),
-        ("CHAPTER 6: TESTING, RESULTS & DISCUSSION", "37"),
-        ("    6.1 Testing Strategy (Unit, Integration, System, and User Acceptance Testing)", "37"),
-        ("    6.2 Test Cases & Execution Summary Table", "37"),
-        ("    6.3 Output Screenshots & Working Demonstration", "38"),
-        ("    6.4 Performance Evaluation & Comparative Results", "39"),
-        ("CHAPTER 7: CONCLUSION & FUTURE SCOPE", "42"),
-        ("    7.1 Summary of Work & Key Achievements", "42"),
-        ("    7.2 Challenges Faced & Lessons Learned (Skill Reflection)", "42"),
-        ("    7.3 Future Enhancements & Scalability Roadmap", "43"),
-        ("CHAPTER 8: LEARNING OUTCOME", "45"),
-        ("    8.1 Architectural & Technical Competencies", "45"),
-        ("    8.2 Professional Skill Alignment Matrix", "45"),
-        ("APPENDIX: (as applicable)", "47"),
-        ("    Appendix A: Complete REST API Specifications", "47"),
-        ("    Appendix B: Sample Ground-Truth Optical Scan Text", "48"),
-        ("    Appendix C: Deterministic Rule Engine Configuration", "49"),
-        ("BIBLIOGRAPHY AND REFERENCE", "50"),
+        ("CHAPTER 5: METHODOLOGY & IMPLEMENTATION", "32"),
+        ("    5.1 Development Methodology", "32"),
+        ("    5.2 Module-Wise Implementation Details", "32"),
+        ("    5.3 Core Algorithms, Logic, or Workflow Integration", "34"),
+        ("    5.4 Key Code Snippets & API / Hardware Integration Highlights", "35"),
+        ("CHAPTER 6: TESTING, RESULTS & DISCUSSION", "39"),
+        ("    6.1 Testing Strategy (Unit, Integration, System, and User Acceptance Testing)", "39"),
+        ("    6.2 Test Cases & Execution Summary Table", "39"),
+        ("    6.3 Output Screenshots & Working Demonstration", "40"),
+        ("        6.3.1 Automated Vitest Test Suite Execution Output", "41"),
+        ("        6.3.2 Executive Dashboard & Pipeline Lifecycle Telemetry Screen", "42"),
+        ("        6.3.3 Central Document Ingestion & Repository Management Screen", "43"),
+        ("        6.3.4 Document Studio: Split-Screen Optical Extraction & Multilingual Summary", "45"),
+        ("        6.3.5 Interactive Visual DAG Workflow Engine Canvas", "46"),
+        ("        6.3.6 Role-Based Maker-Checker Business Approval Queue Screen", "47"),
+        ("        6.3.7 High-Value 2FA Security PIN Payment Disbursement Modal Screen", "48"),
+        ("        6.3.8 Generative RAG Semantic AI Assistant Studio Screen", "49"),
+        ("        6.3.9 Real-Time Operational Analytics & Performance Telemetry Screen", "50"),
+        ("        6.3.10 Complex Two-Column European Invoice Spatial OCR Resynchronization", "51"),
+        ("    6.4 Performance Evaluation & Comparative Results", "51"),
+        ("CHAPTER 7: CONCLUSION & FUTURE SCOPE", "53"),
+        ("    7.1 Summary of Work & Key Achievements", "53"),
+        ("    7.2 Challenges Faced & Lessons Learned (Skill Reflection)", "53"),
+        ("    7.3 Future Enhancements & Scalability Roadmap", "54"),
+        ("CHAPTER 8: LEARNING OUTCOME", "56"),
+        ("    8.1 Architectural & Technical Competencies", "56"),
+        ("    8.2 Professional Skill Alignment Matrix", "56"),
+        ("APPENDIX: (as applicable)", "58"),
+        ("    Appendix A: Complete REST API Specifications", "58"),
+        ("    Appendix B: Sample Ground-Truth Optical Scan Text", "59"),
+        ("    Appendix C: Deterministic Rule Engine Configuration", "60"),
+        ("BIBLIOGRAPHY AND REFERENCE", "61"),
     ]
 
     for title, pg in toc_items:
@@ -463,10 +503,10 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
         ("Table 3.4: Software Technology Stack, Frameworks, and Dependent Library Matrix", "17"),
         ("Table 3.5: Multi-Dimensional Feasibility Assessment Evaluation Matrix", "19"),
         ("Table 4.1: Database Entity Attribute & Storage Schema Specification", "26"),
-        ("Table 5.1: Module-Wise Functional Responsibility & Architecture Matrix", "31"),
-        ("Table 6.1: Master Test Execution & Validation Matrix (TC-01 to TC-10)", "37"),
-        ("Table 6.2: Latency, Throughput & Extraction Accuracy Benchmark Across Formats", "40"),
-        ("Table 8.1: Curriculum Skill Alignment & Professional Competency Mapping", "46"),
+        ("Table 5.1: Module-Wise Functional Responsibility & Architecture Matrix", "33"),
+        ("Table 6.1: Master Test Execution & Validation Matrix (TC-01 to TC-10)", "39"),
+        ("Table 6.2: Latency, Throughput & Extraction Accuracy Benchmark Across Formats", "51"),
+        ("Table 8.1: Curriculum Skill Alignment & Professional Competency Mapping", "57"),
     ]
 
     for title, pg in lot_items:
@@ -505,10 +545,21 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
         ("Figure 4.6: End-to-End Document Lifecycle Sequence Diagram", "26"),
         ("Figure 4.7: Entity-Relationship (ER) Storage Schema Diagram", "28"),
         ("Figure 4.8: Document Studio Multi-Pane UI/UX Layout Wireframe", "29"),
-        ("Figure 5.1: Hybrid Agile-Spiral Iterative Development Lifecycle Model", "30"),
-        ("Figure 5.2: Multi-Pass Heuristic Spatial Regex Matching Pipeline", "33"),
-        ("Figure 6.1: Vitest 23-Test Comprehensive Automated Test Suite Execution Output", "39"),
-        ("Figure 6.2: Processing Latency vs Document File Size Benchmark Curve", "40"),
+        ("Figure 4.9: Document Studio UI/UX Screen Architecture", "30"),
+        ("Figure 4.10: Visual DAG Workflow Builder Canvas Architecture", "31"),
+        ("Figure 5.1: Hybrid Agile-Spiral Iterative Development Lifecycle Model", "32"),
+        ("Figure 5.2: Multi-Pass Heuristic Spatial Regex Matching Pipeline", "35"),
+        ("Figure 6.1: Vitest 23-Test Comprehensive Automated Test Suite Execution Output", "41"),
+        ("Figure 6.2: Executive Dashboard & Pipeline Lifecycle Telemetry Screen", "42"),
+        ("Figure 6.3: Central Document Ingestion & Repository Management Screen", "43"),
+        ("Figure 6.4: Document Studio: Optical Extraction & Multilingual Summary Screen", "45"),
+        ("Figure 6.5: Interactive Visual DAG Workflow Engine Canvas", "46"),
+        ("Figure 6.6: Role-Based Maker-Checker Business Approval Queue Screen", "47"),
+        ("Figure 6.7: High-Value 2FA Security PIN Payment Disbursement Modal Screen", "48"),
+        ("Figure 6.8: Generative RAG Semantic AI Assistant Studio Screen", "49"),
+        ("Figure 6.9: Real-Time Operational Analytics & Performance Telemetry Screen", "50"),
+        ("Figure 6.10: Complex Two-Column European Invoice Spatial OCR Resynchronization Screen", "51"),
+        ("Figure 6.11: Processing Latency vs Document File Size Benchmark Curve", "52"),
     ]
 
     for title, pg in lof_items:
@@ -548,6 +599,7 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
         'add_subsection_heading': add_subsection_heading,
         'add_table_custom': add_table_custom,
         'add_figure_box': add_figure_box,
+        'add_figure_image': add_figure_image,
         'add_code_snippet': add_code_snippet
     }
 

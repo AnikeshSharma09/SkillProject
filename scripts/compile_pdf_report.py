@@ -16,6 +16,8 @@ AI_FLOW_Project_Report_Final.pdf adhering strictly to Symbiosis University of Ap
 
 import os
 import re
+import io
+from PIL import Image as PILImage
 import docx
 from docx.text.paragraph import Paragraph as DocxParagraph
 from docx.table import Table as DocxTable
@@ -26,7 +28,7 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, Preformatted, Flowable
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, Preformatted, Flowable, Image as RLImage
 )
 from reportlab.pdfgen import canvas
 
@@ -43,10 +45,11 @@ def int_to_roman(n):
     return roman_num
 
 class NumberedCanvas(canvas.Canvas):
+    ch1_start_page = None
+
     def __init__(self, *args, **kwargs):
         super(NumberedCanvas, self).__init__(*args, **kwargs)
         self._saved_page_states = []
-        self.chapter_1_page = None
         self.total_pages = 0
 
     def showPage(self):
@@ -71,7 +74,7 @@ class NumberedCanvas(canvas.Canvas):
         self.setFont("Times-Roman", 11)
 
         # Main chapters start when chapter_1_page is reached
-        ch1 = getattr(self, 'ch1_start_page', 5)
+        ch1 = NumberedCanvas.ch1_start_page or 6
         if page_num < ch1:
             # Front matter: lowercase roman numerals
             roman = int_to_roman(page_num)
@@ -85,6 +88,8 @@ class NumberedCanvas(canvas.Canvas):
 
 
 class HeadingTracker(Flowable):
+    tracked_headings = {}
+
     def __init__(self, title):
         super().__init__()
         self.title = title
@@ -93,6 +98,10 @@ class HeadingTracker(Flowable):
 
     def draw(self):
         page = self.canv._pageNumber
+        HeadingTracker.tracked_headings[self.title] = page
+        if "CHAPTER 1" in self.title.upper():
+            if NumberedCanvas.ch1_start_page is None:
+                NumberedCanvas.ch1_start_page = page
         print(f"TRACK: {self.title} -> Physical Page {page}")
 
 def compile_pdf(docx_path, pdf_path):
@@ -276,6 +285,29 @@ def compile_pdf(docx_path, pdf_path):
             )
             if has_page_break:
                 story.append(PageBreak())
+
+            # Check for drawings / images in paragraph runs
+            has_image = False
+            for r in p.runs:
+                blips = r._r.xpath('.//a:blip')
+                if blips:
+                    for blip in blips:
+                        rId = blip.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
+                        if rId and rId in doc.part.related_parts:
+                            blob = doc.part.related_parts[rId].blob
+                            try:
+                                pil_img = PILImage.open(io.BytesIO(blob))
+                                w, h = pil_img.size
+                                scale = avail_w / float(w)
+                                target_w = avail_w
+                                target_h = min(h * scale, 310)
+                                rl_img = RLImage(io.BytesIO(blob), width=target_w, height=target_h)
+                                story.append(Spacer(1, 4))
+                                story.append(rl_img)
+                                story.append(Spacer(1, 4))
+                                has_image = True
+                            except Exception as e:
+                                print(f"Error loading image: {e}")
 
             raw_text = p.text.strip()
             if not raw_text:
