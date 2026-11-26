@@ -176,26 +176,27 @@ def write_chapter6(doc, h):
     add_subsection_heading("6.3.4", "Document Studio: Split-Screen Optical Extraction & Multilingual Summary Screen")
     add_p(
         "Figure 6.4 depicts the flagship Document Studio (`app/documents/[id]/page.tsx`), which implements a Human-in-the-Loop (HITL) verification "
-        "and editing environment processing a multi-item commercial tax invoice (batch2-1056.jpg). The interface utilizes a 7:5 split-screen responsive layout "
+        "and editing environment processing a commercial enterprise invoice (Invoice_INV1024.pdf). The interface utilizes a 7:5 split-screen responsive layout "
         "designed to eliminate operator context switching and cognitive fatigue."
     )
     add_p(
         "The left-hand 7-column viewport hosts the interactive document canvas. Powered by HTML5 Canvas and CSS transforms, it provides smooth "
         "panning, stepped zoom controls (50% to 150%), 90-degree clockwise rotation for improperly scanned pages, and view reset capabilities. The top "
-        "navigation bar displays document breadcrumbs, document category ('Invoice'), lifecycle state ('READY'), and aggregate extraction confidence ('98%'). "
+        "navigation bar displays document breadcrumbs, document category ('Invoice'), lifecycle state ('WORKFLOW_RUNNING'), and aggregate extraction confidence ('98.4%'). "
         "Prominent action triggers allow operators to share secure view tokens, download raw files, trigger the autonomous DAG workflow, or initiate "
         "payment disbursement."
     )
     add_p(
         "The right-hand 5-column studio features two primary modules: the AI Executive Summary and the Optical Entity Sync editor. The Executive "
-        "Summary synthesizes a structured 4-to-5 line briefing highlighting: (1) Official commercial invoice reference and issuing entity; (2) Total balance "
-        "payable and tax components; (3) Itemized transaction summary; (4) Settlement deadline; and (5) Automated reconciliation status. A language switcher "
-        "dropdown enables instant translation across six languages (English, Hindi, Spanish, German, French, Japanese) without data loss."
+        "Summary synthesizes a structured 4-to-5 line briefing highlighting: (1) Official commercial invoice reference (INV-1024) and issuing entity "
+        "(ABC Technologies Private Limited); (2) Total balance payable (INR 72,500.00); (3) Itemized transaction schedule covering cloud infrastructure consulting; "
+        "(4) Commercial settlement deadline (2026-10-04); and (5) Automated reconciliation status. A language switcher dropdown enables instant translation "
+        "across six languages (English, Hindi, Spanish, German, French, Japanese) without data loss."
     )
     add_p(
-        "Below the summary, the Optical Entity Sync panel displays extracted entities: Vendor Name ('Diaz'), Invoice Number ('90615961'), Invoice Date "
-        "('08/21/2013'), Due Date ('2013-09-19'), Subtotal ('$675.99'), and Tax ('$67.60'). High-confidence fields feature green progress meters (>90%), "
-        "while missing fields are badged with amber-red dashed indicators reading '— (Missing / Click pencil to edit)'. Clicking the edit pencil allows "
+        "Below the summary, the Optical Entity Sync panel displays extracted entities: Vendor Name ('ABC Technologies Private Limited'), Invoice Number ('INV-1024'), "
+        "Invoice Date ('2026-09-24'), Due Date ('2026-10-04'), and Total Amount ('INR 72,500.00'). High-confidence fields feature green progress meters (>90%), "
+        "while unextracted or low-confidence fields are badged with amber-red dashed indicators reading '— (Missing / Click pencil to edit)'. Clicking the edit pencil allows "
         "operators to correct or supply values directly, immediately updating the state and appending an immutable audit trail entry."
     )
     add_figure_image("6.4", "Document Studio: Optical Extraction & Multilingual Summary Screen", "report_assets/03_document_studio_extraction.png")
@@ -230,7 +231,8 @@ def write_chapter6(doc, h):
     )
     add_p(
         "The interface explicitly displays the deterministic rule triggering rationale on the approval card: "
-        "`Triggered by deterministic rule \"Invoice High-Value Gate (> ₹50,000)\": Value (65000) satisfied condition > 50000`. "
+        "`Triggered by deterministic rule \"Invoice High-Value Gate (> ₹50,000)\": Value (72,500) satisfied condition > 50,000`. "
+        "The task title identifies the request as `Invoice Approval: ABC Technologies`, authorizing an obligation of ₹72,500 for cloud infrastructure consulting. "
         "This transparent explanation guarantees complete auditability by eliminating opaque black-box decisions. The header indicates the active "
         "user persona (`Signing as: Anikesh Sharma (ADMIN)`) and compares it against the governance threshold (`Required Role: MANAGER`)."
     )
@@ -238,7 +240,7 @@ def write_chapter6(doc, h):
         "Tabbed navigation allows filtering across Pending Signoff, Approved, Rejected, and All Records. Operators have two primary decision buttons: "
         "'Approve' (which signs off the invoice, transitions state to APPROVED, and triggers downstream DAG disbursement) and 'Reject' (which prompts "
         "for a rejection reason and flags the document as REJECTED). The 'Inspect' button opens the Document Studio for visual verification, while the "
-        "'Reset Queue' control purges legacy mock tasks and re-evaluates rules dynamically against live repository documents."
+        "'Reset Queue' control synchronizes the queue dynamically against live repository documents."
     )
     add_figure_image("6.6", "Role-Based Maker-Checker Business Approval Queue Screen", "report_assets/05_approval_management.png")
 
@@ -302,25 +304,25 @@ def write_chapter6(doc, h):
     )
     add_figure_image("6.9", "Real-Time Operational Analytics & Performance Telemetry Screen", "report_assets/08_analytics_telemetry.png")
 
-    # 6.3.10 Complex Two-Column European Invoice Spatial OCR Resynchronization Screen
-    add_subsection_heading("6.3.10", "Complex Two-Column European Invoice Spatial OCR Resynchronization Screen")
+    # 6.3.10 Immutable Audit Trail & Regulatory Compliance Ledger Screen
+    add_subsection_heading("6.3.10", "Immutable Audit Trail & Regulatory Compliance Ledger Screen")
     add_p(
-        "Figure 6.10 highlights the platform's advanced spatial layout heuristics handling complex multi-column document formats (batch2-1056.jpg). "
-        "Standard OCR engines typically read text horizontally across the entire page, resulting in disastrous interleaving when Seller and Client "
-        "details are placed in adjacent columns."
+        "Figure 6.10 highlights the platform's Immutable Audit Trail and Regulatory Compliance Ledger (`app/audit-logs/page.tsx`). "
+        "In enterprise document workflows, financial auditing frameworks (such as SOX Section 404, GDPR, and ISO 27001) mandate a tamper-evident, "
+        "chronological record of every automated and human touchpoint across a document's lifecycle."
     )
     add_p(
-        "To resolve this industry challenge, AI-FLOW implements an intelligent Two-Column Spatial Disentanglement heuristic. The engine dynamically "
-        "partitions the upper page geometry into distinct left and right bounding corridors, isolating Seller information ('Diaz Ltd', address, tax ID) "
-        "from Client information ('Hooper-Berry', address, tax ID) with 100% boundary fidelity."
+        "AI-FLOW accomplishes strict compliance by persisting every state transition alongside a cryptographic SHA-256 fingerprint, actor identity, "
+        "timestamp, and detailed entity delta. As depicted in Figure 6.10, the audit ledger categorizes system activities with color-coded badges: "
+        "document uploads (`DOCUMENT_UPLOADED` in blue), multi-pass optical extractions (`EXTRACT` in purple), deterministic rule triggers (`RULE_TRIGGERED` "
+        "in indigo), and approval sign-offs (`APPROVED` in emerald)."
     )
     add_p(
-        "Furthermore, Figure 6.10 demonstrates the European Comma Decimal Normalizer. The invoice contains European decimal values formatted with commas "
-        "(e.g., net price and gross values). The regex normalization pipeline detects currency symbols, identifies trailing commas followed by two digits, "
-        "and converts them into standard IEEE-754 floating-point decimals. The 'Resync & Recalculate OCR' button allows operators to re-run spatial "
-        "heuristics dynamically if a document scan is skewed or partially distorted, providing immediate visual feedback."
+        "Operators and regulatory compliance officers can filter audit trails by entity taxonomy (ALL, DOCUMENT, RULE, APPROVAL, PAYMENT) or search by "
+        "actor email, document reference, or action type. The ledger guarantees non-repudiation: once an extraction value is altered in the Document "
+        "Studio, the previous value, new value, and modifying user ID are immutably logged, fulfilling enterprise internal control requirements."
     )
-    add_figure_image("6.10", "Complex Two-Column European Invoice Spatial OCR Resynchronization Screen", "report_assets/09_twocolumn_spatial_ocr.png")
+    add_figure_image("6.10", "Immutable Audit Trail & Regulatory Compliance Ledger Screen", "report_assets/09_audit_logs_compliance.png")
 
     # 6.4 Performance Evaluation & Comparative Results
     add_section_heading("6.4", "Performance Evaluation & Comparative Results")

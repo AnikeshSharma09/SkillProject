@@ -378,17 +378,18 @@ def write_chapter4(doc, h):
 
     add_p(
         "Figure 4.9 demonstrates the actual production implementation of the Document Studio interface processing a commercial tax invoice "
-        "(batch2-1056.jpg). The interface is structured to maximize operator productivity while eliminating cognitive fatigue. In the upper header, "
-        "the document taxonomy tag ('Invoice'), processing state ('READY'), and overall optical confidence ('98% Confidence') provide instantaneous "
+        "(Invoice_INV1024.pdf). The interface is structured to maximize operator productivity while eliminating cognitive fatigue. In the upper header, "
+        "the document taxonomy tag ('Invoice'), processing state ('WORKFLOW_RUNNING'), and overall optical confidence ('98.4% Confidence') provide instantaneous "
         "status awareness. Action triggers allow operators to share document links, download raw binaries, execute autonomous DAG workflows, or "
         "trigger high-value payment disbursements directly."
     )
     add_p(
         "The right-hand control studio features the AI Executive Summary briefing card, providing a 4-to-5 line concise briefing that summarizes "
-        "vendor legitimacy, total obligations, itemized delivery scopes, commercial settlement deadlines, and automated reconciliation verdicts. "
-        "The integrated language switcher enables instant translation across six major languages. Below the summary, the Optical Entity Sync panel "
-        "renders extracted fields (Vendor Name, Invoice Number, Invoice Date, Due Date, Subtotal, Tax) alongside real-time color-coded confidence meters. "
-        "Missing fields are highlighted with dashed borders and 0% confidence, inviting immediate human-in-the-loop verification."
+        "vendor legitimacy ('ABC Technologies Private Limited'), total obligations (₹72,500 INR), itemized delivery scopes, commercial settlement deadlines, "
+        "and automated reconciliation verdicts. The integrated language switcher enables instant translation across six major languages. Below the summary, "
+        "the Optical Entity Sync panel renders extracted fields (Vendor Name, Invoice Number, Invoice Date, Due Date, Total Amount) alongside real-time "
+        "color-coded confidence meters. High-confidence fields feature green progress meters (>90%), while missing fields are highlighted with dashed "
+        "borders and 0% confidence, inviting immediate human-in-the-loop verification."
     )
     add_figure_image("4.9", "Document Studio UI/UX Screen Architecture", "report_assets/03_document_studio_extraction.png")
 

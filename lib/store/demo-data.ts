@@ -70,12 +70,12 @@ export const DEMO_USERS: UserProfile[] = [
   },
 ];
 
-// Clean blank slate by default
-export const INITIAL_DOCUMENTS: DocumentItem[] = [];
-export const INITIAL_APPROVALS: ApprovalTask[] = [];
+// Default dataset for clean initial presentation
+export const INITIAL_DOCUMENTS: DocumentItem[] = SAMPLE_DOCUMENTS;
+export const INITIAL_APPROVALS: ApprovalTask[] = SAMPLE_APPROVALS;
 export const INITIAL_WORKFLOWS: WorkflowDefinition[] = [];
-export const INITIAL_AUDIT_LOGS: AuditLogItem[] = [];
-export const INITIAL_PAYMENTS: PaymentTransaction[] = [];
+export const INITIAL_AUDIT_LOGS: AuditLogItem[] = SAMPLE_AUDIT_LOGS;
+export const INITIAL_PAYMENTS: PaymentTransaction[] = SAMPLE_PAYMENTS;
 
 // Rich sample dataset for optional 1-click seeding
 export const SAMPLE_DOCUMENTS: DocumentItem[] = [
