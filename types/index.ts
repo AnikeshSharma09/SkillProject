@@ -99,6 +99,7 @@ export interface DocumentItem {
   previewUrl?: string;
   summary?: string;
   dueDate?: string;
+  ruleTriggered?: string;
   isArchived: boolean;
   uploadedAt: string;
   updatedAt: string;

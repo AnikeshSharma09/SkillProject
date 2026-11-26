@@ -93,6 +93,7 @@ interface AppContextType {
   addApproval: (approval: ApprovalTask) => void;
   approveTask: (id: string, comment?: string) => void;
   rejectTask: (id: string, comment: string) => void;
+  clearApprovals: () => void;
   // Workflow Operations
   addWorkflow: (wf: WorkflowDefinition) => void;
   updateWorkflow: (id: string, updates: Partial<WorkflowDefinition>) => void;
@@ -179,10 +180,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // 3. Approvals
       const savedApprovals = localStorage.getItem("aiflow_approvals");
       if (savedApprovals) {
-        const parsed = JSON.parse(savedApprovals);
-        if (Array.isArray(parsed)) {
-          setApprovals(parsed);
-        }
+        try {
+          const parsed = JSON.parse(savedApprovals);
+          if (Array.isArray(parsed)) {
+            // Automatically purge stale legacy mock tasks from earlier test versions
+            const valid = parsed.filter(
+              (a: ApprovalTask) =>
+                !a.title?.includes("Horizon Software") &&
+                !a.vendorOrRequester?.includes("Horizon Software") &&
+                !a.description?.includes("65000") &&
+                !a.title?.includes("INV-2026-")
+            );
+            setApprovals(valid);
+            try {
+              localStorage.setItem("aiflow_approvals", JSON.stringify(valid));
+            } catch {}
+          }
+        } catch {}
       }
 
       // 4. Workflows
@@ -699,6 +713,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const clearApprovals = () => {
+    setApprovals([]);
+    try {
+      localStorage.removeItem("aiflow_approvals");
+    } catch {}
+  };
+
   const addWorkflow = (wf: WorkflowDefinition) => {
     setWorkflows((prev) => [wf, ...prev]);
     logAudit("WORKFLOW_CREATED", "WORKFLOW", `Created workflow ${wf.name}`);
@@ -1003,6 +1024,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         addApproval,
         approveTask,
         rejectTask,
+        clearApprovals,
         addWorkflow,
         updateWorkflow,
         toggleWorkflowActive,

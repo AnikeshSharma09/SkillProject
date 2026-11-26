@@ -25,7 +25,7 @@ import { ApprovalTask, ApprovalStatus } from "@/types";
 import { formatCurrency, formatTimeAgo } from "@/lib/utils";
 
 export default function ApprovalsPage() {
-  const { currentUser, approvals, approveTask, rejectTask } = useApp();
+  const { currentUser, approvals, approveTask, rejectTask, clearApprovals } = useApp();
 
   const [activeTab, setActiveTab] = useState<ApprovalStatus | "ALL">("PENDING");
   const [selectedTask, setSelectedTask] = useState<ApprovalTask | null>(null);
@@ -87,12 +87,26 @@ export default function ApprovalsPage() {
           </p>
         </div>
 
-        {/* Current user role info badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/60 text-xs text-blue-700 dark:text-blue-300 self-start sm:self-auto">
-          <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <span>
-            Signing as: <strong>{currentUser.fullName}</strong> ({currentUser.role})
-          </span>
+        {/* Current user role info badge & queue controls */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {approvals.length > 0 && (
+            <button
+              onClick={() => {
+                if (confirm("Reset and purge all approval queue items?")) {
+                  clearApprovals();
+                }
+              }}
+              className="text-xs text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-800 hover:bg-rose-50/50 dark:hover:bg-rose-950/30 transition-all font-medium"
+            >
+              Reset Queue
+            </button>
+          )}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/60 text-xs text-blue-700 dark:text-blue-300">
+            <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span>
+              Signing as: <strong>{currentUser.fullName}</strong> ({currentUser.role})
+            </span>
+          </div>
         </div>
       </div>
 

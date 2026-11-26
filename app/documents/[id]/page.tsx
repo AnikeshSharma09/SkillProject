@@ -38,10 +38,13 @@ import {
   ChevronDown,
   Globe,
   Copy,
+  ShieldCheck,
+  ArrowRight,
 } from "lucide-react";
 import { useApp } from "@/lib/store/app-context";
-import { ExtractedField, BoundingBox, DocumentCategory } from "@/types";
+import { ExtractedField, BoundingBox, DocumentCategory, ApprovalTask } from "@/types";
 import { processDocumentContent, generateDocumentSummary, healDocumentItem } from "@/lib/ai/document-processor";
+import { evaluateRules } from "@/lib/rules/rule-evaluator";
 import { formatBytes, formatTimeAgo, formatCurrency } from "@/lib/utils";
 import {
   SUPPORTED_LANGUAGES,
@@ -65,7 +68,18 @@ export default function DocumentDetailPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { documents, updateDocumentField, updateDocument, logAudit, auditLogs, currentUser } = useApp();
+  const {
+    documents,
+    updateDocumentField,
+    updateDocument,
+    logAudit,
+    auditLogs,
+    currentUser,
+    rules,
+    approvals,
+    addApproval,
+    addNotification,
+  } = useApp();
 
   const doc = documents.find((d) => d.id === resolvedParams.id);
   const [activeTab, setActiveTab] = useState<"data" | "workflow" | "history" | "comments">("data");
@@ -142,15 +156,6 @@ export default function DocumentDetailPage({
     setEditedValue("");
   };
 
-  const handleRunWorkflow = () => {
-    updateDocument(doc.id, { status: "WORKFLOW_RUNNING" });
-    logAudit("WORKFLOW_TRIGGERED", "WORKFLOW", `Triggered processing workflow for ${doc.name}`);
-    setTimeout(() => {
-      updateDocument(doc.id, { status: "READY" });
-      router.push("/approvals");
-    }, 1000);
-  };
-
   const handleRotate = () => {
     setRotation((prev) => (prev + 90) % 360);
   };
@@ -185,6 +190,117 @@ export default function DocumentDetailPage({
       )
     );
     return found ? found.extractedValue : fallback;
+  };
+
+  const [isRunningWorkflow, setIsRunningWorkflow] = useState(false);
+  const [workflowNotice, setWorkflowNotice] = useState<{
+    type: "STP" | "APPROVAL" | "QUARANTINE";
+    title: string;
+    description: string;
+    ruleName?: string;
+  } | null>(null);
+
+  const docApproval = useMemo(() => {
+    if (!doc) return undefined;
+    return approvals.find((a) => a.documentId === doc.id && a.status === "PENDING");
+  }, [approvals, doc]);
+
+  const handleRunWorkflow = () => {
+    if (!doc) return;
+    setIsRunningWorkflow(true);
+    setActiveTab("workflow");
+    updateDocument(doc.id, { status: "WORKFLOW_RUNNING" });
+    logAudit("WORKFLOW_TRIGGERED", "WORKFLOW", `Triggered processing workflow for ${doc.name}`, {
+      documentId: doc.id,
+    });
+
+    setTimeout(() => {
+      setIsRunningWorkflow(false);
+
+      // Run dynamic rule evaluation on this document
+      const ruleResults = evaluateRules(doc, rules);
+      const triggered = ruleResults.find((r) => r.matched);
+
+      if (triggered && triggered.actionTriggered?.generatedApproval) {
+        const generated = triggered.actionTriggered.generatedApproval as ApprovalTask;
+        addApproval(generated);
+        updateDocument(doc.id, {
+          status: "WORKFLOW_RUNNING",
+          ruleTriggered: triggered.rule.name,
+        });
+        addNotification({
+          title: "Approval Task Generated",
+          message: `${triggered.rule.name} triggered for ${doc.name}. Routed to ${generated.requiredRole} queue.`,
+          type: "approval",
+          documentId: doc.id,
+        });
+        setWorkflowNotice({
+          type: "APPROVAL",
+          title: "Approval Gate Triggered",
+          description: `Rule "${triggered.rule.name}" satisfied. Manager sign-off task generated for ${generated.vendorOrRequester} (${formatCurrency(generated.amount || 0)}).`,
+          ruleName: triggered.rule.name,
+        });
+      } else if (doc.overallConfidence < 0.70) {
+        updateDocument(doc.id, { status: "REVIEW_REQUIRED" });
+        setWorkflowNotice({
+          type: "QUARANTINE",
+          title: "Confidence Floor Quarantined",
+          description: `Composite extraction certainty (${Math.round(doc.overallConfidence * 100)}%) is below the automated threshold (70%). Human verification required.`,
+        });
+      } else {
+        // Straight-Through Processing (STP)
+        updateDocument(doc.id, { status: "READY" });
+        logAudit("STP_APPROVED", "WORKFLOW", `Document ${doc.name} approved automatically via Straight-Through Processing (STP).`, {
+          documentId: doc.id,
+        });
+        addNotification({
+          title: "Straight-Through Approved",
+          message: `${doc.name} approved via Straight-Through Processing. No manager signoff required.`,
+          type: "workflow",
+          documentId: doc.id,
+        });
+        setWorkflowNotice({
+          type: "STP",
+          title: "Straight-Through Processing (STP) Approved",
+          description: `Document passed all automated validation gates with ${Math.round(doc.overallConfidence * 100)}% confidence. The amount is under the high-value threshold (₹50,000), so no manual approval is needed.`,
+        });
+      }
+    }, 700);
+  };
+
+  const handleForceRouteApproval = () => {
+    if (!doc) return;
+    const vendorVal = getFieldValue(["vendor", "merchant", "seller", "supplier"], doc.name);
+    const totalRaw = getFieldValue(["total", "amount"], "0").replace(/[^0-9.-]/g, "");
+    const totalVal = parseFloat(totalRaw) || 0;
+
+    const manualApproval: ApprovalTask = {
+      id: `appr-manual-${Date.now()}`,
+      organizationId: doc.organizationId,
+      documentId: doc.id,
+      documentName: doc.name,
+      documentType: doc.documentType,
+      title: `${doc.documentType} Signoff: ${vendorVal}`,
+      description: `Manually routed for managerial signoff from Document Studio for ${doc.name}.`,
+      requiredRole: "MANAGER",
+      status: "PENDING",
+      amount: totalVal,
+      currency: "INR",
+      vendorOrRequester: vendorVal,
+      confidence: doc.overallConfidence,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+    };
+
+    addApproval(manualApproval);
+    updateDocument(doc.id, { status: "WORKFLOW_RUNNING", ruleTriggered: "Manual Manager Sign-off Gate" });
+    addNotification({
+      title: "Approval Task Generated",
+      message: `Manual signoff task created for ${vendorVal} (${doc.name}).`,
+      type: "approval",
+      documentId: doc.id,
+    });
+    router.push("/approvals");
   };
 
   // Audit logs related to this document
@@ -324,10 +440,20 @@ export default function DocumentDetailPage({
           <button
             type="button"
             onClick={handleRunWorkflow}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white btn-primary-gradient transition-all cursor-pointer shadow-md hover:shadow-lg"
+            disabled={isRunningWorkflow}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white btn-primary-gradient transition-all cursor-pointer shadow-md hover:shadow-lg disabled:opacity-60"
           >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Run Workflow</span>
+            {isRunningWorkflow ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Running Pipeline...</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Run Workflow</span>
+              </>
+            )}
           </button>
 
           {["Invoice", "Purchase Order", "Receipt"].includes(doc.documentType) && (
@@ -1003,78 +1129,208 @@ export default function DocumentDetailPage({
             </div>
           )}
 
-          {/* TAB 2: WORKFLOW EXECUTION DAG */}
+          {/* TAB 2: DYNAMIC WORKFLOW EXECUTION DAG */}
           {activeTab === "workflow" && (
             <div className="space-y-4 overflow-y-auto max-h-[580px] pr-1">
-              <div className="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50">
-                <div className="text-xs font-bold text-blue-900 dark:text-blue-200">
-                  Automated Pipeline Run: {doc.status}
+              {/* Dynamic Status Banner */}
+              {docApproval ? (
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                      Manager Sign-off Required ({docApproval.requiredRole})
+                    </div>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                      {docApproval.description}
+                    </p>
+                    <Link
+                      href="/approvals"
+                      className="inline-flex items-center gap-1.5 mt-2 text-xs font-bold text-amber-800 dark:text-amber-200 hover:underline"
+                    >
+                      <span>Review in Approval Management</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
                 </div>
-                <p className="text-[11px] text-blue-700 dark:text-blue-300 mt-0.5">
-                  Real-time execution telemetry and deterministic rules routing.
-                </p>
+              ) : workflowNotice?.type === "QUARANTINE" || doc.status === "REVIEW_REQUIRED" ? (
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-rose-900 dark:text-rose-200">
+                      Quarantined to Human Review (Confidence Floor / Missing Entities)
+                    </div>
+                    <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5">
+                      {workflowNotice?.description || "Extraction certainty is below the automated STP threshold. Verify entities in the Extracted Data tab."}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                      Straight-Through Processing (STP) Verified
+                    </div>
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                      {workflowNotice?.description ||
+                        `Document passed all deterministic validations with ${Math.round(doc.overallConfidence * 100)}% certainty. Amount is under the managerial sign-off threshold.`}
+                    </p>
+                    {["Invoice", "Purchase Order", "Receipt"].includes(doc.documentType) && (
+                      <Link
+                        href="/payments"
+                        className="inline-flex items-center gap-1.5 mt-2 text-xs font-bold text-emerald-800 dark:text-emerald-200 hover:underline"
+                      >
+                        <span>Proceed to Payment Disbursement (2FA PIN)</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Deterministic Rule Policy Evaluation Matrix for THIS Document */}
+              <div className="p-3 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-slate-900/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    Deterministic Business Rules Evaluation
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    Category: {doc.documentType}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {rules.map((rule) => {
+                    const totalRaw = getFieldValue(["total", "amount"], "0").replace(/[^0-9.-]/g, "");
+                    const targetVal =
+                      rule.condition.field === "total"
+                        ? parseFloat(totalRaw) || 0
+                        : rule.condition.field === "overallConfidence"
+                        ? doc.overallConfidence
+                        : 0;
+                    const appliesToDoc =
+                      rule.targetDocumentType === doc.documentType || rule.targetDocumentType === "Other";
+                    const condVal = Number(rule.condition.value);
+                    const isMatch =
+                      appliesToDoc &&
+                      ((rule.condition.operator === ">" && targetVal > condVal) ||
+                        (rule.condition.operator === "<" && targetVal < condVal) ||
+                        (rule.condition.operator === ">=" && targetVal >= condVal) ||
+                        (rule.condition.operator === "<=" && targetVal <= condVal));
+
+                    return (
+                      <div
+                        key={rule.id}
+                        className="p-2 rounded-lg bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] flex items-center justify-between text-xs"
+                      >
+                        <div className="min-w-0 pr-2">
+                          <div className="font-semibold text-slate-900 dark:text-slate-100 text-[11px] truncate">
+                            {rule.name}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            {appliesToDoc
+                              ? `Tested: ${rule.condition.field} = ${
+                                  rule.condition.field === "total"
+                                    ? `$${targetVal.toLocaleString()}`
+                                    : Math.round(targetVal * 100) + "%"
+                                } (${rule.condition.operator} ${rule.condition.value})`
+                              : `Not applicable to ${doc.documentType}`}
+                          </div>
+                        </div>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                            !appliesToDoc
+                              ? "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                              : isMatch
+                              ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300"
+                              : "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                          }`}
+                        >
+                          {!appliesToDoc ? "N/A" : isMatch ? "TRIGGERED (Approval)" : "PASSED (Clear)"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Execution Steps List */}
+              {/* Dynamic Execution Steps Tailored to THIS Document */}
               <div className="space-y-3">
                 {[
                   {
                     step: 1,
-                    title: "File Ingestion & Checksum",
-                    desc: `SHA-256 hash verified: ${doc.fileHash.substring(0, 16)}...`,
+                    title: "File Ingestion & Cryptographic Checksum",
+                    desc: `SHA-256 hash verified: ${doc.fileHash.substring(0, 16)}... (${formatBytes(doc.fileSizeBytes)})`,
                     status: "COMPLETED",
                   },
                   {
                     step: 2,
-                    title: "Native OCR & Layout Analysis",
-                    desc: `Processed ${doc.pageCount || 1} page(s). Text stream tokenized.`,
+                    title: "Native OCR & Layout Tokenization",
+                    desc: `Processed ${doc.pageCount || 1} page(s). Open-domain text stream tokenized into ${doc.rawOcrText?.length || 0} characters.`,
                     status: "COMPLETED",
                   },
                   {
                     step: 3,
-                    title: "Taxonomy Classification",
+                    title: "Document Taxonomy Classification",
                     desc: `Identified as ${doc.documentType} (${Math.round(doc.classificationConfidence * 100)}% certainty).`,
                     status: "COMPLETED",
                   },
                   {
                     step: 4,
-                    title: "Entity Extraction & Scoring",
-                    desc: `Extracted ${doc.extractedFields?.length || 0} structured schema attributes.`,
+                    title: "Open-Domain Entity Extraction",
+                    desc: `Discovered ${doc.extractedFields?.length || 0} attributes. Vendor: "${getFieldValue(["vendor", "merchant", "seller", "supplier"], "N/A")}", Total: "${getFieldValue(["total", "amount"], "N/A")}".`,
                     status: "COMPLETED",
                   },
                   {
                     step: 5,
                     title: "Confidence Gate Check",
-                    desc: `Overall score: ${Math.round(doc.overallConfidence * 100)}% (${
-                      doc.overallConfidence >= 0.9
-                        ? "Straight-Through Processing Approved"
-                        : "Human Review Flagged"
+                    desc: `Composite certainty: ${Math.round(doc.overallConfidence * 100)}% (${
+                      doc.overallConfidence >= 0.70
+                        ? "PASSED Confidence Floor (70%)"
+                        : "FLAGGED to Human-in-the-Loop Review"
                     }).`,
-                    status: doc.overallConfidence >= 0.9 ? "COMPLETED" : "WARNING",
+                    status: doc.overallConfidence >= 0.70 ? "COMPLETED" : "WARNING",
                   },
                   {
                     step: 6,
-                    title: "Business Rule Evaluation",
-                    desc:
-                      doc.status === "WORKFLOW_RUNNING"
-                        ? "Rule triggered: Routed to High-Value Approval Queue."
-                        : "Deterministic validations passed with zero policy conflicts.",
-                    status: "COMPLETED",
+                    title: "Downstream Action / Routing Verdict",
+                    desc: docApproval
+                      ? `Rule triggered: Approval task generated for ${docApproval.requiredRole} queue.`
+                      : doc.overallConfidence < 0.70
+                      ? "Extraction flagged: Awaiting human review in Document Studio."
+                      : "Straight-Through Processing Complete: Document verified and eligible for ledger dispatch.",
+                    status: docApproval ? "PENDING_SIGNOFF" : doc.overallConfidence < 0.70 ? "REVIEW" : "COMPLETED",
                   },
                 ].map((s) => (
                   <div
                     key={s.step}
                     className="p-3 rounded-xl border border-slate-100 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.02] flex items-start gap-3"
                   >
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                      ✓
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 ${
+                        s.status === "COMPLETED"
+                          ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400"
+                          : s.status === "PENDING_SIGNOFF"
+                          ? "bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400"
+                          : "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
+                      }`}
+                    >
+                      {s.status === "COMPLETED" ? "✓" : s.status === "PENDING_SIGNOFF" ? "⏱" : "!"}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-900 dark:text-white">
                           {s.step}. {s.title}
                         </span>
-                        <span className="text-[10px] font-extrabold text-emerald-600 uppercase font-mono">
+                        <span
+                          className={`text-[10px] font-extrabold uppercase font-mono ${
+                            s.status === "COMPLETED"
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : s.status === "PENDING_SIGNOFF"
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-rose-600 dark:text-rose-400"
+                          }`}
+                        >
                           {s.status}
                         </span>
                       </div>
@@ -1084,6 +1340,30 @@ export default function DocumentDetailPage({
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Workflow Testing Actions */}
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={handleRunWorkflow}
+                  disabled={isRunningWorkflow}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRunningWorkflow ? "animate-spin" : ""}`} />
+                  <span>Re-evaluate Workflow</span>
+                </button>
+
+                {!docApproval && (
+                  <button
+                    type="button"
+                    onClick={handleForceRouteApproval}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 border border-blue-200 dark:border-blue-900 transition-all cursor-pointer"
+                  >
+                    <span>Force Route to Manager Approval (Test)</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           )}
