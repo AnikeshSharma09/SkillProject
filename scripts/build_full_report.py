@@ -413,47 +413,47 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
         ("    1.2 Problem Statement", "2"),
         ("    1.3 Objectives of the Integrated Skill Project", "3"),
         ("    1.4 Scope and Limitations of the Project", "4"),
-        ("    1.5 Industry / Real-World Relevance & Skill Alignment", "5"),
+        ("    1.5 Industry Relevance & Skill Alignment", "5"),
         ("    1.6 Organization of the Report", "6"),
         ("CHAPTER 2: LITERATURE SURVEY & EXISTING SYSTEM ANALYSIS", "8"),
-        ("    2.1 Review of Existing Solutions / Case Studies", "8"),
+        ("    2.1 Review of Existing Solutions & Case Studies", "8"),
         ("    2.2 Comparative Analysis of Current Approaches", "10"),
         ("    2.3 Identified Gaps and Challenges", "11"),
         ("    2.4 Justification for the Proposed System", "12"),
         ("CHAPTER 3: SYSTEM REQUIREMENTS & FEASIBILITY ANALYSIS", "14"),
         ("    3.1 Functional Requirements", "14"),
-        ("    3.2 Non-Functional Requirements (Performance, Security, Usability, Scalability)", "16"),
-        ("    3.3 Hardware & Software Specifications (Tools, Frameworks, Libraries, APIs)", "17"),
-        ("    3.4 Feasibility Study (Technical, Operational, and Economic)", "18"),
+        ("    3.2 Non-Functional Requirements (NFRs)", "16"),
+        ("    3.3 Hardware & Software Specifications", "17"),
+        ("    3.4 Comprehensive Feasibility Assessment", "18"),
         ("CHAPTER 4: SYSTEM ARCHITECTURE & DESIGN", "21"),
-        ("    4.1 High-Level System Architecture / Block Diagram", "21"),
-        ("    4.2 Process Flow & Control Diagrams (Flowchart / Activity Diagram)", "22"),
-        ("    4.3 UML / Data Modeling Diagrams (Use Case, Class, Sequence, ER Diagrams)", "24"),
-        ("    4.4 Database / Storage Schema Design", "26"),
-        ("    4.5 User Interface (UI/UX) Wireframes & Screen Layouts", "28"),
+        ("    4.1 High-Level System Architecture Block Diagram", "21"),
+        ("    4.2 Process Flow & Control Diagrams", "22"),
+        ("    4.3 UML & Data Modeling Diagrams", "24"),
+        ("    4.4 Database & Storage Schema Design", "26"),
+        ("    4.5 User Interface (UI/UX) Screen Layouts", "28"),
         ("CHAPTER 5: METHODOLOGY & IMPLEMENTATION", "32"),
         ("    5.1 Development Methodology", "32"),
         ("    5.2 Module-Wise Implementation Details", "32"),
-        ("    5.3 Core Algorithms, Logic, or Workflow Integration", "34"),
-        ("    5.4 Key Code Snippets & API / Hardware Integration Highlights", "35"),
+        ("    5.3 Core Algorithms & Workflow Logic", "34"),
+        ("    5.4 Code Snippets & API Integration Highlights", "35"),
         ("CHAPTER 6: TESTING, RESULTS & DISCUSSION", "39"),
-        ("    6.1 Testing Strategy (Unit, Integration, System, and User Acceptance Testing)", "39"),
+        ("    6.1 Testing Strategy (Unit, Integration & System)", "39"),
         ("    6.2 Test Cases & Execution Summary Table", "39"),
-        ("    6.3 Output Screenshots & Working Demonstration", "40"),
-        ("        6.3.1 Automated Vitest Test Suite Execution Output", "41"),
-        ("        6.3.2 Executive Dashboard & Pipeline Lifecycle Telemetry Screen", "43"),
-        ("        6.3.3 Central Document Ingestion & Repository Management Screen", "44"),
-        ("        6.3.4 Document Studio: Split-Screen Optical Extraction & Multilingual Summary", "45"),
-        ("        6.3.5 Interactive Visual DAG Workflow Engine Canvas", "46"),
-        ("        6.3.6 Role-Based Maker-Checker Business Approval Queue Screen", "47"),
-        ("        6.3.7 High-Value 2FA Security PIN Payment Disbursement Modal Screen", "48"),
-        ("        6.3.8 Generative RAG Semantic AI Assistant Studio Screen", "49"),
-        ("        6.3.9 Real-Time Operational Analytics & Performance Telemetry Screen", "50"),
-        ("        6.3.10 Immutable Audit Trail & Regulatory Compliance Ledger Screen", "51"),
-        ("    6.4 Performance Evaluation & Comparative Results", "51"),
+        ("    6.3 Output Screenshots & Demonstration", "40"),
+        ("        6.3.1 Automated Vitest Test Suite Output", "41"),
+        ("        6.3.2 Executive Dashboard & Telemetry Screen", "43"),
+        ("        6.3.3 Central Document Ingestion Screen", "44"),
+        ("        6.3.4 Document Studio: Optical Extraction Screen", "45"),
+        ("        6.3.5 Interactive Visual DAG Workflow Canvas", "46"),
+        ("        6.3.6 Business Approval Management Screen", "47"),
+        ("        6.3.7 Payment Disbursement Modal Screen", "48"),
+        ("        6.3.8 Generative RAG AI Assistant Studio", "49"),
+        ("        6.3.9 Real-Time Operational Analytics Screen", "50"),
+        ("        6.3.10 Immutable Compliance Audit Trail Screen", "51"),
+        ("    6.4 Performance Evaluation & Benchmark Results", "51"),
         ("CHAPTER 7: CONCLUSION & FUTURE SCOPE", "54"),
         ("    7.1 Summary of Work & Key Achievements", "54"),
-        ("    7.2 Challenges Faced & Lessons Learned (Skill Reflection)", "54"),
+        ("    7.2 Challenges Faced & Lessons Learned", "54"),
         ("    7.3 Future Enhancements & Scalability Roadmap", "55"),
         ("CHAPTER 8: LEARNING OUTCOME", "57"),
         ("    8.1 Architectural & Technical Competencies", "57"),
@@ -461,25 +461,25 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
         ("APPENDIX: (as applicable)", "59"),
         ("    Appendix A: Complete REST API Specifications", "59"),
         ("    Appendix B: Sample Ground-Truth Optical Scan Text", "60"),
-        ("    Appendix C: Deterministic Rule Engine Configuration", "61"),
+        ("    Appendix C: Deterministic Rule Engine Config", "61"),
         ("BIBLIOGRAPHY AND REFERENCE", "62"),
     ]
 
     for title, pg in toc_items:
         p_row = doc.add_paragraph()
-        p_row.paragraph_format.line_spacing = 1.25
+        p_row.paragraph_format.line_spacing = 1.2
         p_row.paragraph_format.space_before = Pt(1)
         p_row.paragraph_format.space_after = Pt(2)
         r_t = p_row.add_run(title)
         r_t.font.name = 'Times New Roman'
-        r_t.font.size = Pt(11)
+        r_t.font.size = Pt(10.5)
         if title.startswith("CHAPTER") or title in ["ABSTRACT", "TABLE OF CONTENTS", "LIST OF TABLES", "LIST OF FIGURES", "APPENDIX: (as applicable)", "BIBLIOGRAPHY AND REFERENCE"]:
             r_t.font.bold = True
         p_row.paragraph_format.tab_stops.add_tab_stop(Inches(5.75), docx.enum.text.WD_TAB_ALIGNMENT.RIGHT, docx.enum.text.WD_TAB_LEADER.DOTS)
         r_tab = p_row.add_run("\t")
         r_p = p_row.add_run(pg)
         r_p.font.name = 'Times New Roman'
-        r_p.font.size = Pt(11)
+        r_p.font.size = Pt(10.5)
         if title.startswith("CHAPTER") or title in ["ABSTRACT", "TABLE OF CONTENTS", "LIST OF TABLES", "LIST OF FIGURES", "APPENDIX: (as applicable)", "BIBLIOGRAPHY AND REFERENCE"]:
             r_p.font.bold = True
 
@@ -496,32 +496,32 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
     r_lot.underline = True
 
     lot_items = [
-        ("Table 2.1: Comparative Matrix of Contemporary Intelligent Document Processing Solutions", "10"),
-        ("Table 3.1: Detailed Functional Requirements Specification (FR-01 to FR-10)", "15"),
-        ("Table 3.2: Non-Functional Engineering Requirements Matrix (NFR-01 to NFR-06)", "16"),
-        ("Table 3.3: Hardware Development & Host Execution Environment Specifications", "17"),
-        ("Table 3.4: Software Technology Stack, Frameworks, and Dependent Library Matrix", "17"),
-        ("Table 3.5: Multi-Dimensional Feasibility Assessment Evaluation Matrix", "19"),
-        ("Table 4.1: Database Entity Attribute & Storage Schema Specification", "26"),
-        ("Table 5.1: Module-Wise Functional Responsibility & Architecture Matrix", "33"),
-        ("Table 6.1: Master Test Execution & Validation Matrix (TC-01 to TC-10)", "39"),
-        ("Table 6.2: Latency, Throughput & Extraction Accuracy Benchmark Across Formats", "51"),
-        ("Table 8.1: Curriculum Skill Alignment & Professional Competency Mapping", "58"),
+        ("Table 2.1: Comparative Matrix of Contemporary IDP Systems", "10"),
+        ("Table 3.1: Functional Requirements Matrix (FR-01 to FR-10)", "15"),
+        ("Table 3.2: Non-Functional Requirements Matrix (NFR-01 to 06)", "16"),
+        ("Table 3.3: Hardware Development & Host Environment Specs", "17"),
+        ("Table 3.4: Software Technology Stack & Dependency Matrix", "17"),
+        ("Table 3.5: Multi-Dimensional Feasibility Assessment Matrix", "19"),
+        ("Table 4.1: Database Schema & Entity Attribute Specifications", "26"),
+        ("Table 5.1: Module Responsibility & Architecture Matrix", "33"),
+        ("Table 6.1: Master Test Validation Matrix (TC-01 to TC-10)", "39"),
+        ("Table 6.2: Latency, Throughput & Extraction Accuracy Benchmarks", "51"),
+        ("Table 8.1: Curriculum Skill Alignment & Competency Mapping", "58"),
     ]
 
     for title, pg in lot_items:
         p_row = doc.add_paragraph()
-        p_row.paragraph_format.line_spacing = 1.3
-        p_row.paragraph_format.space_before = Pt(2)
+        p_row.paragraph_format.line_spacing = 1.2
+        p_row.paragraph_format.space_before = Pt(1)
         p_row.paragraph_format.space_after = Pt(2)
         r_t = p_row.add_run(title)
         r_t.font.name = 'Times New Roman'
-        r_t.font.size = Pt(11)
+        r_t.font.size = Pt(10.5)
         p_row.paragraph_format.tab_stops.add_tab_stop(Inches(5.75), docx.enum.text.WD_TAB_ALIGNMENT.RIGHT, docx.enum.text.WD_TAB_LEADER.DOTS)
         r_tab = p_row.add_run("\t")
         r_p = p_row.add_run(pg)
         r_p.font.name = 'Times New Roman'
-        r_p.font.size = Pt(11)
+        r_p.font.size = Pt(10.5)
         r_p.font.bold = True
 
     # 4. LIST OF FIGURES
@@ -537,44 +537,44 @@ def build_full_report(output_filename="AI_FLOW_Project_Report_Final_Editable.doc
     r_lof.underline = True
 
     lof_items = [
-        ("Figure 4.1: High-Level End-to-End System Architecture Block Diagram", "22"),
-        ("Figure 4.2: Asynchronous Document Ingestion, OCR & Extraction Flowchart", "23"),
-        ("Figure 4.3: Human-in-the-Loop (HITL) Validation & Confidence Routing Activity Diagram", "24"),
+        ("Figure 4.1: High-Level End-to-End System Architecture Diagram", "22"),
+        ("Figure 4.2: Asynchronous Document Ingestion & OCR Flowchart", "23"),
+        ("Figure 4.3: HITL Validation & Routing Activity Diagram", "24"),
         ("Figure 4.4: UML System Use Case Interaction Diagram", "25"),
         ("Figure 4.5: UML Core Domain Class Diagram", "25"),
         ("Figure 4.6: End-to-End Document Lifecycle Sequence Diagram", "26"),
         ("Figure 4.7: Entity-Relationship (ER) Storage Schema Diagram", "28"),
-        ("Figure 4.8: Document Studio Multi-Pane UI/UX Layout Wireframe", "29"),
+        ("Figure 4.8: Document Studio Multi-Pane Layout Wireframe", "29"),
         ("Figure 4.9: Document Studio UI/UX Screen Architecture", "30"),
         ("Figure 4.10: Visual DAG Workflow Builder Canvas Architecture", "31"),
-        ("Figure 5.1: Hybrid Agile-Spiral Iterative Development Lifecycle Model", "32"),
-        ("Figure 5.2: Multi-Pass Heuristic Spatial Regex Matching Pipeline", "35"),
-        ("Figure 6.1: Vitest 23-Test Comprehensive Automated Test Suite Execution Output", "41"),
-        ("Figure 6.2: Executive Dashboard & Pipeline Lifecycle Telemetry Screen", "43"),
-        ("Figure 6.3: Central Document Ingestion & Repository Management Screen", "44"),
-        ("Figure 6.4: Document Studio: Optical Extraction & Multilingual Summary Screen", "45"),
+        ("Figure 5.1: Hybrid Agile-Spiral Development Lifecycle Model", "32"),
+        ("Figure 5.2: Multi-Pass Spatial Regex Matching Pipeline", "35"),
+        ("Figure 6.1: Vitest 23-Test Automated Test Suite Output", "41"),
+        ("Figure 6.2: Executive Dashboard & Telemetry Screen", "43"),
+        ("Figure 6.3: Central Document Ingestion & Repository Screen", "44"),
+        ("Figure 6.4: Document Studio: Optical Extraction Screen", "45"),
         ("Figure 6.5: Interactive Visual DAG Workflow Engine Canvas", "46"),
-        ("Figure 6.6: Role-Based Maker-Checker Business Approval Queue Screen", "47"),
-        ("Figure 6.7: High-Value 2FA Security PIN Payment Disbursement Modal Screen", "48"),
-        ("Figure 6.8: Generative RAG Semantic AI Assistant Studio Screen", "49"),
-        ("Figure 6.9: Real-Time Operational Analytics & Performance Telemetry Screen", "50"),
-        ("Figure 6.10: Immutable Audit Trail & Regulatory Compliance Ledger Screen", "51"),
-        ("Figure 6.11: Processing Latency vs Document File Size Benchmark Curve", "52"),
+        ("Figure 6.6: Role-Based Maker-Checker Business Approval Screen", "47"),
+        ("Figure 6.7: High-Value 2FA PIN Payment Disbursement Modal", "48"),
+        ("Figure 6.8: Generative RAG Semantic AI Assistant Studio", "49"),
+        ("Figure 6.9: Real-Time Operational Analytics & Telemetry Screen", "50"),
+        ("Figure 6.10: Immutable Audit Trail & Compliance Ledger Screen", "51"),
+        ("Figure 6.11: Processing Latency vs File Size Benchmark Curve", "52"),
     ]
 
     for title, pg in lof_items:
         p_row = doc.add_paragraph()
-        p_row.paragraph_format.line_spacing = 1.3
-        p_row.paragraph_format.space_before = Pt(2)
+        p_row.paragraph_format.line_spacing = 1.2
+        p_row.paragraph_format.space_before = Pt(1)
         p_row.paragraph_format.space_after = Pt(2)
         r_t = p_row.add_run(title)
         r_t.font.name = 'Times New Roman'
-        r_t.font.size = Pt(11)
+        r_t.font.size = Pt(10.5)
         p_row.paragraph_format.tab_stops.add_tab_stop(Inches(5.75), docx.enum.text.WD_TAB_ALIGNMENT.RIGHT, docx.enum.text.WD_TAB_LEADER.DOTS)
         r_tab = p_row.add_run("\t")
         r_p = p_row.add_run(pg)
         r_p.font.name = 'Times New Roman'
-        r_p.font.size = Pt(11)
+        r_p.font.size = Pt(10.5)
         r_p.font.bold = True
 
     # MAIN CHAPTERS SECTION (Arabic Numerals 1, 2, 3...)

@@ -70,6 +70,18 @@ body {
   letter-spacing: -0.011em;
 }
 
+/* Suppress native Windows / Edge / WebKit password reveal icons to prevent collision with custom eye toggle */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-contacts-auto-fill-button,
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* Light SaaS Pastel Hero Mesh */
 .pastel-hero-bg {
   background: radial-gradient(circle at 10% 20%, rgba(219, 234, 254, 0.7) 0%, transparent 40%),

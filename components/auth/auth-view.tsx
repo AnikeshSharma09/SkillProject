@@ -22,9 +22,6 @@ import {
   Briefcase,
   Users,
   Shield,
-  CreditCard,
-  Layers,
-  HelpCircle,
   ExternalLink,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
@@ -38,24 +35,55 @@ export interface AuthViewProps {
 export function AuthView({ initialMode = "login" }: AuthViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, register, isAuthenticated, isHydrated, availableUsers } = useApp();
+  const { login, register, isAuthenticated, isHydrated } = useApp();
 
   const [mode, setMode] = useState<"login" | "register">(initialMode);
 
   // If already authenticated and state is hydrated, auto-redirect to dashboard
   useEffect(() => {
     if (isHydrated && isAuthenticated) {
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     }
-  }, [isHydrated, isAuthenticated, router]);
+  }, [isHydrated, isAuthenticated]);
 
-  // Check query parameter ?mode=register or ?mode=login
+  // Sync mode with query parameter ?mode=register or ?mode=login
   useEffect(() => {
     const urlMode = searchParams.get("mode");
     if (urlMode === "register" || urlMode === "login") {
       setMode(urlMode);
     }
   }, [searchParams]);
+
+  // Tab switching helpers that update state and keep URL synchronized
+  const handleSwitchToRegister = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setMode("register");
+    setErrorMessage("");
+    setSuccessMessage("");
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("mode", "register");
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
+
+  const handleSwitchToLogin = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setMode("login");
+    setErrorMessage("");
+    setSuccessMessage("");
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("mode");
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   // Sign In Form State
   const [loginEmail, setLoginEmail] = useState("anikesh.sharma@aiflow.company");
@@ -92,6 +120,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
   // Sign In Submission
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setErrorMessage("");
     setSuccessMessage("");
 
@@ -112,8 +141,8 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
       if (res.success) {
         setSuccessMessage("Authentication successful! Loading workspace...");
         setTimeout(() => {
-          router.push("/dashboard");
-        }, 500);
+          window.location.href = "/dashboard";
+        }, 400);
       } else {
         setErrorMessage(res.error || "Unable to sign in. Please verify your credentials.");
       }
@@ -127,16 +156,27 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
   // Registration Submission
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (!regFullName.trim() || !regEmail.trim() || !regOrgName.trim()) {
-      setErrorMessage("Please complete all required fields.");
+    if (!regFullName.trim()) {
+      setErrorMessage("Please enter your full legal name.");
       return;
     }
 
-    if (!regEmail.includes("@") || !regEmail.includes(".")) {
-      setErrorMessage("Please provide a valid corporate email address.");
+    if (!regEmail.trim()) {
+      setErrorMessage("Please provide your corporate email address.");
+      return;
+    }
+
+    if (!regEmail.includes("@")) {
+      setErrorMessage("Please provide a valid email address with an '@' symbol.");
+      return;
+    }
+
+    if (!regPassword.trim()) {
+      setErrorMessage("Please choose a security password for your account.");
       return;
     }
 
@@ -146,7 +186,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
     }
 
     if (regPassword !== regConfirmPassword) {
-      setErrorMessage("Passwords do not match. Please re-enter your password.");
+      setErrorMessage("Passwords do not match. Please verify both password entries.");
       return;
     }
 
@@ -159,24 +199,24 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
 
     try {
       const res = await register({
-        fullName: regFullName,
-        email: regEmail,
-        password: regPassword,
-        organizationName: regOrgName,
-        department: regDepartment,
+        fullName: regFullName.trim(),
+        email: regEmail.trim(),
+        password: regPassword.trim(),
+        organizationName: regOrgName.trim() || "Symbiosis Enterprise",
+        department: regDepartment.trim() || "Operations",
         role: regRole,
       });
 
       if (res.success) {
         setSuccessMessage("Account created successfully! Forwarding to your dashboard...");
         setTimeout(() => {
-          router.push("/dashboard");
-        }, 600);
+          window.location.href = "/dashboard";
+        }, 500);
       } else {
         setErrorMessage(res.error || "Failed to register account.");
       }
-    } catch {
-      setErrorMessage("An unexpected registration error occurred.");
+    } catch (err: any) {
+      setErrorMessage(err?.message || "An unexpected registration error occurred.");
     } finally {
       setIsLoading(false);
     }
@@ -195,7 +235,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
       if (res.success) {
         setSuccessMessage("Signed in! Loading dashboard...");
         setTimeout(() => {
-          router.push("/dashboard");
+          window.location.href = "/dashboard";
         }, 400);
       } else {
         setErrorMessage(res.error || "Login failed.");
@@ -207,7 +247,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
 
   // Auto-fill into form without submitting
   const handleSelectCredentials = (userEmail: string, userPass: string) => {
-    setMode("login");
+    handleSwitchToLogin();
     setLoginEmail(userEmail);
     setLoginPassword(userPass);
     setShowCredentialsModal(false);
@@ -356,39 +396,41 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
             </button>
           </div>
 
-          {/* Mode Switcher Segmented Control: [Sign In] vs [Create Account] */}
-          <div className="p-1 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-1">
+          {/* Mode Switcher Segmented Control: [Sign In] vs [Register] */}
+          <div className="p-1 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-1 relative z-10">
             <button
               type="button"
-              onClick={() => {
-                setMode("login");
-                setErrorMessage("");
-                setSuccessMessage("");
+              id="tab-signin-btn"
+              onClick={handleSwitchToLogin}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleSwitchToLogin();
               }}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none ${
                 mode === "login"
-                  ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs border border-slate-200/60 dark:border-slate-700"
-                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                  ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/80 dark:border-slate-700"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50"
               }`}
             >
-              <Lock className="w-3.5 h-3.5" />
+              <Lock className="w-3.5 h-3.5 shrink-0" />
               <span>Sign In (Existing User)</span>
             </button>
 
             <button
               type="button"
-              onClick={() => {
-                setMode("register");
-                setErrorMessage("");
-                setSuccessMessage("");
+              id="tab-register-btn"
+              onClick={handleSwitchToRegister}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleSwitchToRegister();
               }}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none ${
                 mode === "register"
-                  ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs border border-slate-200/60 dark:border-slate-700"
-                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                  ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/80 dark:border-slate-700"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50"
               }`}
             >
-              <User className="w-3.5 h-3.5" />
+              <User className="w-3.5 h-3.5 shrink-0" />
               <span>Register (New User)</span>
             </button>
           </div>
@@ -411,7 +453,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
             </p>
           </div>
 
-          {/* Feedback Messages */}
+          {/* Feedback Messages (Top Level) */}
           {errorMessage && (
             <div
               role="alert"
@@ -439,7 +481,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
               FORM 1: SIGN IN (FOR OLD / EXISTING USERS)
               ======================================================== */}
           {mode === "login" ? (
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <form noValidate onSubmit={handleLoginSubmit} className="space-y-4">
               {/* Corporate Email Field */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -459,7 +501,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                   </button>
                 </div>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     id="login-email"
                     name="email"
@@ -474,7 +516,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                 </div>
               </div>
 
-              {/* Password Field */}
+              {/* Password Field with Guaranteed Interactive Eye Toggle */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label
@@ -492,7 +534,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                   </button>
                 </div>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     id="login-password"
                     name="password"
@@ -502,15 +544,29 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Enter corporate password"
-                    className="w-full pl-10 pr-11 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition-all shadow-2xs font-mono text-xs"
+                    className="w-full pl-10 pr-12 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition-all shadow-2xs font-mono text-xs"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    tabIndex={-1}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowLoginPassword((prev) => !prev);
+                    }}
                     aria-label={showLoginPassword ? "Hide password" : "Show password"}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                    title={showLoginPassword ? "Hide password" : "Show password"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 flex items-center justify-center p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer select-none"
                   >
-                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showLoginPassword ? (
+                      <EyeOff className="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                    ) : (
+                      <Eye className="w-4 h-4 shrink-0 text-slate-400" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -534,7 +590,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2.5 px-4 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 transition-all shadow-md hover:shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 transition-all shadow-md hover:shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer z-10"
               >
                 {isLoading ? (
                   <>
@@ -596,17 +652,17 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
             /* ========================================================
                FORM 2: REGISTER (FOR NEW USERS)
                ======================================================== */
-            <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+            <form noValidate onSubmit={handleRegisterSubmit} className="space-y-3.5">
               {/* Full Name */}
               <div className="space-y-1">
                 <label
                   htmlFor="reg-name"
                   className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
                 >
-                  Full Legal Name
+                  Full Legal Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     id="reg-name"
                     type="text"
@@ -625,10 +681,10 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                   htmlFor="reg-email"
                   className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
                 >
-                  Corporate Email
+                  Corporate Email <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     id="reg-email"
                     type="email"
@@ -641,17 +697,17 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                 </div>
               </div>
 
-              {/* Organization & Department in 2 columns */}
+              {/* Organization & Role in 2 columns */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="space-y-1">
                   <label
                     htmlFor="reg-org"
                     className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
                   >
-                    Organization
+                    Organization <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <Building className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Building className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <input
                       id="reg-org"
                       type="text"
@@ -672,7 +728,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                     Assigned Role
                   </label>
                   <div className="relative">
-                    <Briefcase className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Briefcase className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <select
                       id="reg-role"
                       value={regRole}
@@ -713,7 +769,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                     htmlFor="reg-pass"
                     className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
                   >
-                    Password
+                    Password (min 6) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -723,14 +779,29 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       placeholder="Min 6 characters"
-                      className="w-full pl-3 pr-8 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 shadow-2xs font-mono"
+                      className="w-full pl-3 pr-10 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 shadow-2xs font-mono"
                     />
                     <button
                       type="button"
-                      onClick={() => setShowRegPassword(!showRegPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      tabIndex={-1}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowRegPassword((prev) => !prev);
+                      }}
+                      title={showRegPassword ? "Hide password" : "Show password"}
+                      aria-label={showRegPassword ? "Hide password" : "Show password"}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer select-none"
                     >
-                      {showRegPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {showRegPassword ? (
+                        <EyeOff className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -740,7 +811,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                     htmlFor="reg-confirm-pass"
                     className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
                   >
-                    Confirm Password
+                    Confirm Password <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -750,18 +821,50 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                       value={regConfirmPassword}
                       onChange={(e) => setRegConfirmPassword(e.target.value)}
                       placeholder="Repeat password"
-                      className="w-full pl-3 pr-8 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 shadow-2xs font-mono"
+                      className="w-full pl-3 pr-10 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 shadow-2xs font-mono"
                     />
                     <button
                       type="button"
-                      onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      tabIndex={-1}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowRegConfirmPassword((prev) => !prev);
+                      }}
+                      title={showRegConfirmPassword ? "Hide password" : "Show password"}
+                      aria-label={showRegConfirmPassword ? "Hide password" : "Show password"}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer select-none"
                     >
-                      {showRegConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {showRegConfirmPassword ? (
+                        <EyeOff className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   </div>
                 </div>
               </div>
+
+              {/* Password Match Status */}
+              {regConfirmPassword && (
+                <div className="text-[11px] flex items-center gap-1.5">
+                  {regPassword === regConfirmPassword ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Passwords match</span>
+                    </span>
+                  ) : (
+                    <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 font-semibold">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>Passwords do not match yet</span>
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Password Strength Meter */}
               {regPassword && (
@@ -808,11 +911,23 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                 </label>
               </div>
 
+              {/* Inline Error Notice Directly Above Submit */}
+              {errorMessage && (
+                <div
+                  role="alert"
+                  className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs flex items-center gap-2 animate-fadeIn"
+                >
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span className="font-medium">{errorMessage}</span>
+                </div>
+              )}
+
               {/* Register Submit Button */}
               <button
                 type="submit"
+                id="register-submit-btn"
                 disabled={isLoading}
-                className="w-full py-2.5 px-4 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 transition-all shadow-md hover:shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 transition-all shadow-md hover:shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer z-10"
               >
                 {isLoading ? (
                   <>
@@ -821,7 +936,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                   </>
                 ) : (
                   <>
-                    <span>Create Account & Enter Workspace</span>
+                    <span>Register New User & Access Workspace</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -836,10 +951,8 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                 Are you a new employee or tenant?{" "}
                 <button
                   type="button"
-                  onClick={() => {
-                    setMode("register");
-                    setErrorMessage("");
-                  }}
+                  id="footer-register-link"
+                  onClick={handleSwitchToRegister}
                   className="font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                 >
                   Register here
@@ -850,10 +963,8 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                 Already have an authorized account?{" "}
                 <button
                   type="button"
-                  onClick={() => {
-                    setMode("login");
-                    setErrorMessage("");
-                  }}
+                  id="footer-login-link"
+                  onClick={handleSwitchToLogin}
                   className="font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                 >
                   Sign in here
@@ -905,7 +1016,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
               </div>
 
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {DEMO_USERS.map((person, idx) => (
+                {DEMO_USERS.map((person) => (
                   <div
                     key={person.id}
                     className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
