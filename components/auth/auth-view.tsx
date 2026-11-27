@@ -36,7 +36,19 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
   const router = useRouter();
   const { login, register, isAuthenticated, isHydrated } = useApp();
 
-  const [mode, setMode] = useState<"login" | "register">(initialMode);
+  const [mode, setMode] = useState<"login" | "register">(() => {
+    if (typeof window !== "undefined") {
+      if ((window as any).__aiflow_current_mode) {
+        return (window as any).__aiflow_current_mode;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const urlMode = params.get("mode");
+      if (urlMode === "register" || urlMode === "login") {
+        return urlMode;
+      }
+    }
+    return initialMode;
+  });
 
   // If already authenticated and state is hydrated, auto-redirect to dashboard
   useEffect(() => {
@@ -45,15 +57,28 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
     }
   }, [isHydrated, isAuthenticated]);
 
-  // Sync mode with query parameter ?mode=register or ?mode=login on initial client mount
+  // Sync mode and password visibility on initial client mount
   useEffect(() => {
     if (typeof window !== "undefined") {
+      document.body.setAttribute("data-hydrated", "true");
+      const currentGlobalMode = (window as any).__aiflow_current_mode;
       const params = new URLSearchParams(window.location.search);
-      const urlMode = params.get("mode");
+      const urlMode = currentGlobalMode || params.get("mode");
       if (urlMode === "register" || urlMode === "login") {
         setMode(urlMode);
         if ((window as any).__aiflow_switch) {
           (window as any).__aiflow_switch(urlMode);
+        }
+      }
+      if ((window as any).__aiflow_pwd_visibility) {
+        if ((window as any).__aiflow_pwd_visibility["login-password"] !== undefined) {
+          setShowLoginPassword((window as any).__aiflow_pwd_visibility["login-password"]);
+        }
+        if ((window as any).__aiflow_pwd_visibility["reg-pass"] !== undefined) {
+          setShowRegPassword((window as any).__aiflow_pwd_visibility["reg-pass"]);
+        }
+        if ((window as any).__aiflow_pwd_visibility["reg-confirm-pass"] !== undefined) {
+          setShowRegConfirmPassword((window as any).__aiflow_pwd_visibility["reg-confirm-pass"]);
         }
       }
     }
@@ -99,7 +124,12 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
   // Sign In Form State
   const [loginEmail, setLoginEmail] = useState("anikesh.sharma@aiflow.company");
   const [loginPassword, setLoginPassword] = useState("Admin@2026#Secure");
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && (window as any).__aiflow_pwd_visibility) {
+      return Boolean((window as any).__aiflow_pwd_visibility["login-password"]);
+    }
+    return false;
+  });
   const [rememberMe, setRememberMe] = useState(true);
 
   // Register Form State
@@ -110,8 +140,18 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
   const [regRole, setRegRole] = useState<UserRole>("ADMIN");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
-  const [showRegPassword, setShowRegPassword] = useState(false);
-  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && (window as any).__aiflow_pwd_visibility) {
+      return Boolean((window as any).__aiflow_pwd_visibility["reg-pass"]);
+    }
+    return false;
+  });
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && (window as any).__aiflow_pwd_visibility) {
+      return Boolean((window as any).__aiflow_pwd_visibility["reg-confirm-pass"]);
+    }
+    return false;
+  });
   const [agreedToTerms, setAgreedToTerms] = useState(true);
 
   // General Status State
@@ -346,8 +386,9 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
               </div>
               <button
                 type="button"
+                id="open-credentials-hero-btn"
                 onClick={() => setShowCredentialsModal(true)}
-                className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 cursor-pointer"
+                className="open-credentials-trigger text-[11px] font-semibold text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>View Full List</span>
                 <ExternalLink className="w-3 h-3" />
@@ -361,6 +402,8 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                 <button
                   key={u.id}
                   type="button"
+                  data-quick-email={u.email}
+                  data-quick-password={u.password || "Admin@2026#Secure"}
                   onClick={() => handleSelectCredentials(u.email, u.password || "Admin@2026#Secure")}
                   className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-medium text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
@@ -370,8 +413,9 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
               ))}
               <button
                 type="button"
+                id="open-credentials-more-btn"
                 onClick={() => setShowCredentialsModal(true)}
-                className="px-2 py-1 rounded-lg bg-blue-600/40 hover:bg-blue-600/60 border border-blue-400/30 text-[11px] font-semibold text-blue-200 transition-colors cursor-pointer"
+                className="open-credentials-trigger px-2 py-1 rounded-lg bg-blue-600/40 hover:bg-blue-600/60 border border-blue-400/30 text-[11px] font-semibold text-blue-200 transition-colors cursor-pointer"
               >
                 +2 More
               </button>
@@ -399,8 +443,9 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
             <Logo size="md" />
             <button
               type="button"
+              id="open-credentials-mobile-btn"
               onClick={() => setShowCredentialsModal(true)}
-              className="text-xs text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1"
+              className="open-credentials-trigger text-xs text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1 cursor-pointer"
             >
               <KeyRound className="w-3.5 h-3.5" />
               <span>Company Credentials</span>
@@ -412,7 +457,10 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
             dangerouslySetInnerHTML={{
               __html: `
 (function() {
+  window.__aiflow_pwd_visibility = window.__aiflow_pwd_visibility || {};
+
   function switchMode(newMode) {
+    window.__aiflow_current_mode = newMode;
     var loginBox = document.getElementById('auth-login-box');
     var regBox = document.getElementById('auth-register-box');
     var footLog = document.getElementById('footer-login-msg');
@@ -423,45 +471,182 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
     var headingText = document.getElementById('auth-heading-text');
     var subText = document.getElementById('auth-sub-text');
 
+    var activeTabClass = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/80 dark:border-slate-700";
+    var inactiveTabClass = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50";
+
     if (newMode === 'register') {
       if (loginBox) loginBox.style.display = 'none';
       if (regBox) regBox.style.display = 'block';
       if (footLog) footLog.style.display = 'none';
       if (footReg) footReg.style.display = 'block';
-      if (btnLogin) {
-        btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50";
-      }
-      if (btnReg) {
-        btnReg.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/80 dark:border-slate-700";
-      }
+      if (btnLogin) btnLogin.className = inactiveTabClass;
+      if (btnReg) btnReg.className = activeTabClass;
       if (badgeText) badgeText.textContent = 'New Enterprise Account Setup';
       if (headingText) headingText.textContent = 'Create your corporate account';
       if (subText) subText.textContent = 'Register a new user profile to access document ingestion, OCR parsing, and workflows.';
+      try {
+        var u = new URL(window.location.href);
+        u.searchParams.set('mode', 'register');
+        window.history.replaceState({}, '', u.toString());
+      } catch (err) {}
     } else {
       if (loginBox) loginBox.style.display = 'block';
       if (regBox) regBox.style.display = 'none';
       if (footLog) footLog.style.display = 'block';
       if (footReg) footReg.style.display = 'none';
-      if (btnReg) {
-        btnReg.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50";
-      }
-      if (btnLogin) {
-        btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/80 dark:border-slate-700";
-      }
+      if (btnLogin) btnLogin.className = activeTabClass;
+      if (btnReg) btnReg.className = inactiveTabClass;
       if (badgeText) badgeText.textContent = 'Corporate Identity Verification';
       if (headingText) headingText.textContent = 'Welcome back to AI-FLOW';
       if (subText) subText.textContent = 'Enter your registered credentials below, or click an authorized company profile.';
+      try {
+        var u = new URL(window.location.href);
+        u.searchParams.delete('mode');
+        window.history.replaceState({}, '', u.toString());
+      } catch (err) {}
     }
   }
 
-  function togglePassword(inputId) {
+  function togglePassword(inputId, btn) {
     var inp = document.getElementById(inputId);
     if (!inp) return;
-    inp.type = (inp.type === 'password') ? 'text' : 'password';
+    var nextType = (inp.type === 'password') ? 'text' : 'password';
+    inp.type = nextType;
+    window.__aiflow_pwd_visibility[inputId] = (nextType === 'text');
+
+    if (!btn) {
+      if (inputId === 'login-password') btn = document.getElementById('login-eye-toggle-btn');
+      else if (inputId === 'reg-pass') btn = document.getElementById('reg-eye-toggle-btn');
+      else if (inputId === 'reg-confirm-pass') btn = document.getElementById('reg-confirm-eye-toggle-btn');
+    }
+
+    if (btn) {
+      var isSm = inputId !== 'login-password';
+      var sz = isSm ? 'w-3.5 h-3.5' : 'w-4 h-4';
+      if (nextType === 'text') {
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="' + sz + ' shrink-0 text-blue-600 dark:text-blue-400"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>';
+        btn.title = 'Hide password';
+        btn.setAttribute('aria-label', 'Hide password');
+      } else {
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="' + sz + ' shrink-0 text-slate-400"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+        btn.title = 'Show password';
+        btn.setAttribute('aria-label', 'Show password');
+      }
+    }
   }
+
+  function openModal() {
+    var m = document.getElementById('auth-credentials-modal');
+    if (m) {
+      m.style.display = 'flex';
+    }
+  }
+
+  function closeModal() {
+    var m = document.getElementById('auth-credentials-modal');
+    if (m) {
+      m.style.display = 'none';
+    }
+  }
+
+  function autoFillLogin(email, pass) {
+    var emailInp = document.getElementById('login-email');
+    var passInp = document.getElementById('login-password');
+    if (emailInp) emailInp.value = email;
+    if (passInp) passInp.value = pass || 'Admin@2026#Secure';
+    switchMode('login');
+    closeModal();
+  }
+
+  // Pre-hydration instant capture dispatcher: intercepts user clicks at 0ms
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+    if (!target) return;
+    var btn = target.closest ? target.closest('button, a') : null;
+    if (!btn) return;
+    var id = btn.id || '';
+
+    if (id === 'tab-register-btn' || id === 'footer-register-link') {
+      e.preventDefault();
+      e.stopPropagation();
+      switchMode('register');
+    } else if (id === 'tab-signin-btn' || id === 'footer-login-link') {
+      e.preventDefault();
+      e.stopPropagation();
+      switchMode('login');
+    } else if (id === 'login-eye-toggle-btn') {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePassword('login-password', btn);
+    } else if (id === 'reg-eye-toggle-btn') {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePassword('reg-pass', btn);
+    } else if (id === 'reg-confirm-eye-toggle-btn') {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePassword('reg-confirm-pass', btn);
+    } else if (btn.classList.contains('open-credentials-trigger')) {
+      e.preventDefault();
+      e.stopPropagation();
+      openModal();
+    } else if (btn.classList.contains('close-credentials-trigger')) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeModal();
+    } else if (btn.hasAttribute('data-quick-email')) {
+      e.preventDefault();
+      e.stopPropagation();
+      var qEmail = btn.getAttribute('data-quick-email');
+      var qPass = btn.getAttribute('data-quick-password');
+      autoFillLogin(qEmail, qPass);
+    } else if (btn.hasAttribute('data-modal-autofill-email')) {
+      e.preventDefault();
+      e.stopPropagation();
+      var mEmail = btn.getAttribute('data-modal-autofill-email');
+      var mPass = btn.getAttribute('data-modal-autofill-password');
+      autoFillLogin(mEmail, mPass);
+    } else if (btn.hasAttribute('data-modal-signin-email')) {
+      e.preventDefault();
+      e.stopPropagation();
+      var sEmail = btn.getAttribute('data-modal-signin-email');
+      var sPass = btn.getAttribute('data-modal-signin-password');
+      autoFillLogin(sEmail, sPass);
+      // Trigger submission
+      var submitBtn = document.getElementById('signin-submit-btn');
+      if (submitBtn) submitBtn.click();
+    } else if (btn.hasAttribute('data-copy-text')) {
+      e.preventDefault();
+      e.stopPropagation();
+      var cText = btn.getAttribute('data-copy-text');
+      if (cText && navigator.clipboard) {
+        navigator.clipboard.writeText(cText);
+      }
+    }
+  }, true);
+
+  // Capture mousedown for buttons to eliminate any perceived click latency
+  document.addEventListener('mousedown', function(e) {
+    var target = e.target;
+    if (!target) return;
+    var btn = target.closest ? target.closest('button, a') : null;
+    if (!btn) return;
+    var id = btn.id || '';
+    if (id === 'tab-register-btn' || id === 'footer-register-link') {
+      e.preventDefault();
+      switchMode('register');
+    } else if (id === 'tab-signin-btn' || id === 'footer-login-link') {
+      e.preventDefault();
+      switchMode('login');
+    } else if (id === 'login-eye-toggle-btn' || id === 'reg-eye-toggle-btn' || id === 'reg-confirm-eye-toggle-btn') {
+      e.preventDefault();
+    }
+  }, true);
 
   window.__aiflow_switch = switchMode;
   window.__aiflow_toggle_pwd = togglePassword;
+  window.__aiflow_open_modal = openModal;
+  window.__aiflow_close_modal = closeModal;
 })();
               `,
             }}
@@ -562,7 +747,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
             id="auth-login-box"
             style={{ display: mode === "login" ? "block" : "none" }}
           >
-            <form noValidate onSubmit={handleLoginSubmit} className="space-y-4">
+            <form noValidate onSubmit={handleLoginSubmit} action="javascript:void(0);" className="space-y-4">
               {/* Corporate Email Field */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -574,8 +759,9 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                   </label>
                   <button
                     type="button"
+                    id="open-credentials-form-btn"
                     onClick={() => setShowCredentialsModal(true)}
-                    className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1 cursor-pointer"
+                    className="open-credentials-trigger text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1 cursor-pointer"
                   >
                     <KeyRound className="w-3 h-3" />
                     <span>Company Emails</span>
@@ -608,8 +794,9 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                   </label>
                   <button
                     type="button"
+                    id="open-credentials-forgot-btn"
                     onClick={() => setShowCredentialsModal(true)}
-                    className="text-[11px] text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
+                    className="open-credentials-trigger text-[11px] text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:underline cursor-pointer"
                   >
                     Forgot password?
                   </button>
@@ -711,6 +898,8 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                     <button
                       key={user.id}
                       type="button"
+                      data-quick-email={user.email}
+                      data-quick-password={user.password || "Admin@2026#Secure"}
                       onClick={() => handleQuickLogin(user.email, user.password)}
                       disabled={isLoading}
                       className="p-2.5 text-left rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-600 bg-white dark:bg-slate-900 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all shadow-2xs group cursor-pointer"
@@ -748,7 +937,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
             id="auth-register-box"
             style={{ display: mode === "register" ? "block" : "none" }}
           >
-            <form noValidate onSubmit={handleRegisterSubmit} className="space-y-3.5">
+            <form noValidate onSubmit={handleRegisterSubmit} action="javascript:void(0);" className="space-y-3.5">
               {/* Full Name */}
               <div className="space-y-1">
                 <label
@@ -1104,163 +1293,174 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
 
       {/* ========================================================
           CREDENTIALS DIRECTORY MODAL (POPUP FOR ALL 5 ACCOUNTS)
+          Pre-rendered in DOM so it can open at 0ms before hydration
           ======================================================== */}
-      {showCredentialsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
-                  <KeyRound className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Authorized Company Credentials Directory
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Pre-configured executive & operational personnel accounts with passwords.
-                  </p>
-                </div>
+      <div
+        id="auth-credentials-modal"
+        style={{ display: showCredentialsModal ? "flex" : "none" }}
+        className="fixed inset-0 z-50 items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn"
+      >
+        <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          {/* Modal Header */}
+          <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+                <KeyRound className="w-5 h-5" />
               </div>
-              <button
-                type="button"
-                onClick={() => setShowCredentialsModal(false)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 text-lg font-bold cursor-pointer"
-              >
-                ✕
-              </button>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Authorized Company Credentials Directory
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Pre-configured executive &amp; operational personnel accounts with passwords.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              id="close-credentials-modal-top"
+              onClick={() => setShowCredentialsModal(false)}
+              className="close-credentials-trigger w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 text-lg font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Modal Body: Personnel Table */}
+          <div className="p-5 overflow-y-auto space-y-3">
+            <div className="text-xs text-slate-600 dark:text-slate-400 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 rounded-xl p-3 flex items-start gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+              <span>
+                Click <strong>Auto-Fill</strong> to automatically populate credentials and switch to the login tab,
+                or copy individual emails and passwords for manual testing.
+              </span>
             </div>
 
-            {/* Modal Body: Personnel Table */}
-            <div className="p-5 overflow-y-auto space-y-3">
-              <div className="text-xs text-slate-600 dark:text-slate-400 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 rounded-xl p-3 flex items-start gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                <span>
-                  Click <strong>Auto-Fill</strong> to automatically populate credentials and switch to the login tab,
-                  or copy individual emails and passwords for manual testing.
-                </span>
-              </div>
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              {DEMO_USERS.map((person) => (
+                <div
+                  key={person.id}
+                  className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <img
+                      src={person.avatarUrl}
+                      alt={person.fullName}
+                      className="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 mt-0.5"
+                    />
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
+                          {person.fullName}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            person.role === "ADMIN"
+                              ? "bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+                              : person.role === "MANAGER"
+                              ? "bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                              : person.role === "APPROVER"
+                              ? "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                              : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          }`}
+                        >
+                          {person.role}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {person.title || person.department || "Enterprise Officer"}
+                      </div>
 
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {DEMO_USERS.map((person) => (
-                  <div
-                    key={person.id}
-                    className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
-                  >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <img
-                        src={person.avatarUrl}
-                        alt={person.fullName}
-                        className="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700 shrink-0 mt-0.5"
-                      />
-                      <div className="min-w-0 space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-900 dark:text-white">
-                            {person.fullName}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                              person.role === "ADMIN"
-                                ? "bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
-                                : person.role === "MANAGER"
-                                ? "bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-                                : person.role === "APPROVER"
-                                ? "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                                : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                            }`}
+                      {/* Email & Password display */}
+                      <div className="pt-1 flex flex-wrap items-center gap-2 text-xs">
+                        {/* Email badge */}
+                        <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                          <Mail className="w-3 h-3 text-slate-400" />
+                          <span>{person.email}</span>
+                          <button
+                            type="button"
+                            data-copy-text={person.email}
+                            onClick={() => handleCopy(person.email, `email-${person.id}`)}
+                            className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer ml-0.5"
+                            title="Copy Email"
                           >
-                            {person.role}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                          {person.title || person.department || "Enterprise Officer"}
+                            {copiedKey === `email-${person.id}` ? (
+                              <Check className="w-3 h-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
                         </div>
 
-                        {/* Email & Password display */}
-                        <div className="pt-1 flex flex-wrap items-center gap-2 text-xs">
-                          {/* Email badge */}
-                          <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                            <Mail className="w-3 h-3 text-slate-400" />
-                            <span>{person.email}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(person.email, `email-${person.id}`)}
-                              className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer ml-0.5"
-                              title="Copy Email"
-                            >
-                              {copiedKey === `email-${person.id}` ? (
-                                <Check className="w-3 h-3 text-emerald-500" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
-                          </div>
-
-                          {/* Password badge */}
-                          <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                            <Lock className="w-3 h-3 text-slate-400" />
-                            <span>{person.password || "Admin@2026#Secure"}</span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleCopy(person.password || "Admin@2026#Secure", `pass-${person.id}`)
-                              }
-                              className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer ml-0.5"
-                              title="Copy Password"
-                            >
-                              {copiedKey === `pass-${person.id}` ? (
-                                <Check className="w-3 h-3 text-emerald-500" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
-                          </div>
+                        {/* Password badge */}
+                        <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                          <Lock className="w-3 h-3 text-slate-400" />
+                          <span>{person.password || "Admin@2026#Secure"}</span>
+                          <button
+                            type="button"
+                            data-copy-text={person.password || "Admin@2026#Secure"}
+                            onClick={() =>
+                              handleCopy(person.password || "Admin@2026#Secure", `pass-${person.id}`)
+                            }
+                            className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer ml-0.5"
+                            title="Copy Password"
+                          >
+                            {copiedKey === `pass-${person.id}` ? (
+                              <Check className="w-3 h-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
-
-                    {/* Auto Fill Button */}
-                    <div className="shrink-0 flex items-center gap-2 pt-2 sm:pt-0">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleSelectCredentials(person.email, person.password || "Admin@2026#Secure")
-                        }
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
-                      >
-                        Auto-Fill
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowCredentialsModal(false);
-                          handleQuickLogin(person.email, person.password);
-                        }}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer"
-                      >
-                        Sign In Now
-                      </button>
-                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between text-xs text-slate-500">
-              <span>Security PIN for High-Value Payment Disbursal: <strong>7792</strong></span>
-              <button
-                type="button"
-                onClick={() => setShowCredentialsModal(false)}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 cursor-pointer"
-              >
-                Close
-              </button>
+                  {/* Auto Fill Button */}
+                  <div className="shrink-0 flex items-center gap-2 pt-2 sm:pt-0">
+                    <button
+                      type="button"
+                      data-modal-autofill-email={person.email}
+                      data-modal-autofill-password={person.password || "Admin@2026#Secure"}
+                      onClick={() =>
+                        handleSelectCredentials(person.email, person.password || "Admin@2026#Secure")
+                      }
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
+                    >
+                      Auto-Fill
+                    </button>
+                    <button
+                      type="button"
+                      data-modal-signin-email={person.email}
+                      data-modal-signin-password={person.password || "Admin@2026#Secure"}
+                      onClick={() => {
+                        setShowCredentialsModal(false);
+                        handleQuickLogin(person.email, person.password);
+                      }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer"
+                    >
+                      Sign In Now
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
+
+          {/* Modal Footer */}
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between text-xs text-slate-500">
+            <span>Security PIN for High-Value Payment Disbursal: <strong>7792</strong></span>
+            <button
+              type="button"
+              id="close-credentials-modal-bottom"
+              onClick={() => setShowCredentialsModal(false)}
+              className="close-credentials-trigger px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
