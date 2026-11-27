@@ -26,56 +26,64 @@ export const DEMO_USERS: UserProfile[] = [
   {
     id: "usr-anikesh-01",
     organizationId: "org-symbiosis-01",
-    email: "anikesh.sharma@symbiosis.edu",
+    email: "anikesh.sharma@aiflow.company",
     fullName: "Anikesh Sharma",
     role: "ADMIN",
-    organizationName: "Symbiosis University",
+    title: "Managing Director & System Administrator",
+    department: "Executive Leadership & Governance",
+    organizationName: "AI-FLOW Corporation",
+    password: "Admin@2026#Secure",
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
   },
   {
     id: "usr-admin-01",
     organizationId: "org-symbiosis-01",
-    email: "sarah.chen@symbiosis.edu",
+    email: "sarah.chen@aiflow.company",
     fullName: "Sarah Chen",
     role: "ADMIN",
-    organizationName: "Symbiosis University",
+    title: "Chief Financial Officer & Treasury Head",
+    department: "Finance, Accounts & Disbursements",
+    organizationName: "AI-FLOW Corporation",
+    password: "Finance#Sarah2026",
     avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
   },
   {
     id: "usr-manager-02",
     organizationId: "org-symbiosis-01",
-    email: "vikram.patel@symbiosis.edu",
+    email: "vikram.patel@aiflow.company",
     fullName: "Vikram Patel",
     role: "MANAGER",
-    organizationName: "Symbiosis University",
+    title: "Operations & Invoice Processing Manager",
+    department: "Commercial Operations & Invoicing",
+    organizationName: "AI-FLOW Corporation",
+    password: "Ops@Vikram2026!",
     avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
   },
   {
     id: "usr-approver-03",
     organizationId: "org-symbiosis-01",
-    email: "elena.rostova@symbiosis.edu",
+    email: "elena.rostova@aiflow.company",
     fullName: "Elena Rostova",
     role: "APPROVER",
-    organizationName: "Symbiosis University",
+    title: "Chief Risk & Regulatory Compliance Officer",
+    department: "Legal, Risk Oversight & Regulatory Compliance",
+    organizationName: "AI-FLOW Corporation",
+    password: "Audit@Elena2026",
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
   },
   {
     id: "usr-emp-04",
     organizationId: "org-symbiosis-01",
-    email: "rahul.sharma@symbiosis.edu",
+    email: "rahul.sharma@aiflow.company",
     fullName: "Rahul Sharma",
     role: "EMPLOYEE",
-    organizationName: "Symbiosis University",
+    title: "Senior Accounts Specialist & OCR Analyst",
+    department: "Accounts Payable & Document Ingestion",
+    organizationName: "AI-FLOW Corporation",
+    password: "Rahul@Accounts2026",
     avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
   },
 ];
-
-// Default dataset for clean initial presentation
-export const INITIAL_DOCUMENTS: DocumentItem[] = SAMPLE_DOCUMENTS;
-export const INITIAL_APPROVALS: ApprovalTask[] = SAMPLE_APPROVALS;
-export const INITIAL_WORKFLOWS: WorkflowDefinition[] = [];
-export const INITIAL_AUDIT_LOGS: AuditLogItem[] = SAMPLE_AUDIT_LOGS;
-export const INITIAL_PAYMENTS: PaymentTransaction[] = SAMPLE_PAYMENTS;
 
 // Rich sample dataset for optional 1-click seeding
 export const SAMPLE_DOCUMENTS: DocumentItem[] = [
@@ -536,4 +544,12 @@ export const SAMPLE_PAYMENTS: PaymentTransaction[] = [
     updatedAt: "2026-09-26T14:00:30Z",
   },
 ];
+
+// Default dataset for clean initial presentation (initialized after sample declarations)
+export const INITIAL_DOCUMENTS: DocumentItem[] = SAMPLE_DOCUMENTS;
+export const INITIAL_APPROVALS: ApprovalTask[] = SAMPLE_APPROVALS;
+export const INITIAL_WORKFLOWS: WorkflowDefinition[] = [];
+export const INITIAL_AUDIT_LOGS: AuditLogItem[] = SAMPLE_AUDIT_LOGS;
+export const INITIAL_PAYMENTS: PaymentTransaction[] = SAMPLE_PAYMENTS;
+
 

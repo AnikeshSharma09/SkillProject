@@ -55,7 +55,7 @@ export function TopNav() {
   const handleSignOut = () => {
     logout();
     setIsUserMenuOpen(false);
-    router.push("/login");
+    router.push("/");
   };
 
   return (

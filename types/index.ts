@@ -18,6 +18,9 @@ export interface UserProfile {
   role: UserRole;
   avatarUrl?: string;
   organizationName?: string;
+  department?: string;
+  title?: string;
+  password?: string;
 }
 
 export type DocumentStatus =

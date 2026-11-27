@@ -65,6 +65,8 @@ interface AppContextType {
     password?: string;
     organizationName: string;
     role?: UserRole;
+    department?: string;
+    title?: string;
     industry?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
@@ -142,7 +144,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>(DEMO_USERS);
   const [currentUser, setCurrentUser] = useState<UserProfile>(DEMO_USERS[0]); // Anikesh Sharma (ADMIN)
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
   const [approvals, setApprovals] = useState<ApprovalTask[]>(INITIAL_APPROVALS);
@@ -411,67 +413,89 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAuditLogs((prev) => [newLog, ...prev]);
   }, [currentUser]);
 
+  // Corporate Email Alias resolver
+  const resolveUserByEmail = (inputEmail: string, users: UserProfile[]): UserProfile | undefined => {
+    const clean = inputEmail.trim().toLowerCase();
+    
+    // Direct match
+    const direct = users.find((u) => u.email.toLowerCase() === clean);
+    if (direct) return direct;
+
+    // Corporate aliases
+    const aliasMap: Record<string, string> = {
+      "anikesh.sharma@symbiosis.edu": "anikesh.sharma@aiflow.company",
+      "admin@aiflow.company": "anikesh.sharma@aiflow.company",
+      "admin@aiflow.com": "anikesh.sharma@aiflow.company",
+      "sarah.chen@symbiosis.edu": "sarah.chen@aiflow.company",
+      "finance@aiflow.company": "sarah.chen@aiflow.company",
+      "finance@aiflow.com": "sarah.chen@aiflow.company",
+      "vikram.patel@symbiosis.edu": "vikram.patel@aiflow.company",
+      "ops@aiflow.company": "vikram.patel@aiflow.company",
+      "ops@aiflow.com": "vikram.patel@aiflow.company",
+      "elena.rostova@symbiosis.edu": "elena.rostova@aiflow.company",
+      "compliance@aiflow.company": "elena.rostova@aiflow.company",
+      "compliance@aiflow.com": "elena.rostova@aiflow.company",
+      "rahul.sharma@symbiosis.edu": "rahul.sharma@aiflow.company",
+      "accounts@aiflow.company": "rahul.sharma@aiflow.company",
+      "accounts@aiflow.com": "rahul.sharma@aiflow.company",
+    };
+
+    const targetEmail = aliasMap[clean];
+    if (targetEmail) {
+      return users.find((u) => u.email.toLowerCase() === targetEmail);
+    }
+
+    return undefined;
+  };
+
   // Authentication: Login function
   const login = async (
     email: string,
     password?: string
   ): Promise<{ success: boolean; error?: string }> => {
+    if (!email || !email.trim()) {
+      return { success: false, error: "Please enter your corporate email address." };
+    }
+
     const cleanEmail = email.trim().toLowerCase();
-    
-    // Check if user exists in registered list
-    const foundUser = availableUsers.find(
-      (u) => u.email.toLowerCase() === cleanEmail
-    );
+    const foundUser = resolveUserByEmail(cleanEmail, availableUsers);
 
-    if (foundUser) {
-      setCurrentUser(foundUser);
-      setIsAuthenticated(true);
-      logAudit(
-        "USER_LOGIN",
-        "USER",
-        `User ${foundUser.fullName} (${foundUser.email}) logged in as ${foundUser.role}.`
-      );
-      addNotification({
-        title: "Welcome Back",
-        message: `Signed in as ${foundUser.fullName} (${foundUser.role}).`,
-        type: "system",
-      });
-      return { success: true };
-    }
-
-    // If new email entered directly with password, auto-create user session
-    if (email && email.includes("@")) {
-      const generatedName = email.split("@")[0].replace(/[._-]/g, " ");
-      const formattedName =
-        generatedName.charAt(0).toUpperCase() + generatedName.slice(1);
-      const newUser: UserProfile = {
-        id: `usr-${Date.now()}`,
-        organizationId: "org-symbiosis-01",
-        email: cleanEmail,
-        fullName: formattedName || "Enterprise User",
-        role: "ADMIN",
-        organizationName: "Symbiosis University",
-        avatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+    if (!foundUser) {
+      return {
+        success: false,
+        error: "No account found with this corporate email. If you are a new user, please switch to 'Create Account' to register.",
       };
-
-      setAvailableUsers((prev) => [...prev, newUser]);
-      setCurrentUser(newUser);
-      setIsAuthenticated(true);
-
-      logAudit(
-        "USER_LOGIN",
-        "USER",
-        `User ${newUser.fullName} (${newUser.email}) authenticated.`
-      );
-      addNotification({
-        title: "Session Initialized",
-        message: `Welcome, ${newUser.fullName}! Workspace ready.`,
-        type: "system",
-      });
-      return { success: true };
     }
 
-    return { success: false, error: "Please enter a valid email address." };
+    // Verify Password
+    const enteredPassword = password ? password.trim() : "";
+    if (foundUser.password) {
+      if (!enteredPassword) {
+        return { success: false, error: "Please enter your corporate password." };
+      }
+      if (enteredPassword !== foundUser.password) {
+        return { success: false, error: "Incorrect password. Please verify your corporate security credentials." };
+      }
+    }
+
+    setCurrentUser(foundUser);
+    setIsAuthenticated(true);
+    try {
+      localStorage.setItem("aiflow_is_auth", "true");
+      localStorage.setItem("aiflow_current_user", JSON.stringify(foundUser));
+    } catch {}
+
+    logAudit(
+      "USER_LOGIN",
+      "USER",
+      `User ${foundUser.fullName} (${foundUser.email}) logged in successfully as ${foundUser.role}.`
+    );
+    addNotification({
+      title: "Welcome Back",
+      message: `Signed in as ${foundUser.fullName} (${foundUser.role} • ${foundUser.department || foundUser.organizationName}).`,
+      type: "system",
+    });
+    return { success: true };
   };
 
   // Authentication: Register function
@@ -481,16 +505,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     password?: string;
     organizationName: string;
     role?: UserRole;
+    department?: string;
     industry?: string;
   }): Promise<{ success: boolean; error?: string }> => {
-    if (!data.fullName.trim() || !data.email.trim() || !data.organizationName.trim()) {
-      return { success: false, error: "Please fill in all mandatory fields." };
+    if (!data.fullName?.trim() || !data.email?.trim() || !data.password?.trim()) {
+      return { success: false, error: "Please complete Full Name, Corporate Email, and Password." };
     }
 
     const cleanEmail = data.email.trim().toLowerCase();
-    const existing = availableUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (!cleanEmail.includes("@") || !cleanEmail.includes(".")) {
+      return { success: false, error: "Please provide a valid corporate email address." };
+    }
+
+    if (data.password.length < 6) {
+      return { success: false, error: "Password must be at least 6 characters in length." };
+    }
+
+    const existing = resolveUserByEmail(cleanEmail, availableUsers);
     if (existing) {
-      return { success: false, error: "An account with this email already exists. Please log in." };
+      return { success: false, error: "An account with this email already exists. Please switch to Sign In." };
     }
 
     const newOrgId = `org-${Date.now()}`;
@@ -500,23 +533,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       email: cleanEmail,
       fullName: data.fullName.trim(),
       role: data.role || "ADMIN",
-      organizationName: data.organizationName.trim(),
-      avatarUrl: `https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80`,
+      department: data.department?.trim() || "Operations & Enterprise Management",
+      organizationName: data.organizationName?.trim() || "AI-FLOW Corporation",
+      password: data.password.trim(),
+      avatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
     };
 
-    setAvailableUsers((prev) => [newUser, ...prev]);
+    const updatedUsers = [newUser, ...availableUsers];
+    setAvailableUsers(updatedUsers);
     setCurrentUser(newUser);
     setIsAuthenticated(true);
+
+    try {
+      localStorage.setItem("aiflow_available_users", JSON.stringify(updatedUsers));
+      localStorage.setItem("aiflow_current_user", JSON.stringify(newUser));
+      localStorage.setItem("aiflow_is_auth", "true");
+    } catch {}
 
     logAudit(
       "USER_REGISTERED",
       "USER",
-      `New tenant registered: ${newUser.fullName} (${newUser.email}) for organization ${data.organizationName}.`
+      `New user registered: ${newUser.fullName} (${newUser.email}) as ${newUser.role} in ${newUser.department}.`
     );
 
     addNotification({
-      title: "Workspace Created",
-      message: `Welcome to AI-FLOW, ${newUser.fullName}! Organization "${data.organizationName}" initialized.`,
+      title: "Account Registered",
+      message: `Welcome to AI-FLOW, ${newUser.fullName}! Your corporate profile (${newUser.role}) is active.`,
       type: "system",
     });
 
@@ -531,6 +573,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       `User ${currentUser.fullName} (${currentUser.email}) signed out.`
     );
     setIsAuthenticated(false);
+    try {
+      localStorage.setItem("aiflow_is_auth", "false");
+      localStorage.removeItem("aiflow_current_user");
+    } catch {}
   };
 
   const addNotification = (

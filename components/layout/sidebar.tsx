@@ -172,7 +172,21 @@ export function Sidebar() {
             ))}
           </select>
 
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <div className="flex items-center gap-1 shrink-0 z-20">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                logout();
+                window.location.href = "/";
+              }}
+              title="Sign Out"
+              className="p-1 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+          </div>
         </div>
       </div>
     </aside>
