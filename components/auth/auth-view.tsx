@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Sparkles,
   ShieldCheck,
@@ -34,7 +34,6 @@ export interface AuthViewProps {
 
 export function AuthView({ initialMode = "login" }: AuthViewProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { login, register, isAuthenticated, isHydrated } = useApp();
 
   const [mode, setMode] = useState<"login" | "register">(initialMode);
@@ -46,13 +45,19 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
     }
   }, [isHydrated, isAuthenticated]);
 
-  // Sync mode with query parameter ?mode=register or ?mode=login
+  // Sync mode with query parameter ?mode=register or ?mode=login on initial client mount
   useEffect(() => {
-    const urlMode = searchParams.get("mode");
-    if (urlMode === "register" || urlMode === "login") {
-      setMode(urlMode);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlMode = params.get("mode");
+      if (urlMode === "register" || urlMode === "login") {
+        setMode(urlMode);
+        if ((window as any).__aiflow_switch) {
+          (window as any).__aiflow_switch(urlMode);
+        }
+      }
     }
-  }, [searchParams]);
+  }, []);
 
   // Tab switching helpers that update state and keep URL synchronized
   const handleSwitchToRegister = (e?: React.MouseEvent) => {
@@ -64,6 +69,9 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
     setErrorMessage("");
     setSuccessMessage("");
     if (typeof window !== "undefined") {
+      if ((window as any).__aiflow_switch) {
+        (window as any).__aiflow_switch("register");
+      }
       const url = new URL(window.location.href);
       url.searchParams.set("mode", "register");
       window.history.replaceState({}, "", url.toString());
@@ -79,6 +87,9 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
     setErrorMessage("");
     setSuccessMessage("");
     if (typeof window !== "undefined") {
+      if ((window as any).__aiflow_switch) {
+        (window as any).__aiflow_switch("login");
+      }
       const url = new URL(window.location.href);
       url.searchParams.delete("mode");
       window.history.replaceState({}, "", url.toString());
@@ -396,6 +407,66 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
             </button>
           </div>
 
+          {/* Inline Instant-Activation Controller: Executes at 0ms during HTML parse */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+(function() {
+  function switchMode(newMode) {
+    var loginBox = document.getElementById('auth-login-box');
+    var regBox = document.getElementById('auth-register-box');
+    var footLog = document.getElementById('footer-login-msg');
+    var footReg = document.getElementById('footer-register-msg');
+    var btnLogin = document.getElementById('tab-signin-btn');
+    var btnReg = document.getElementById('tab-register-btn');
+    var badgeText = document.getElementById('auth-badge-text');
+    var headingText = document.getElementById('auth-heading-text');
+    var subText = document.getElementById('auth-sub-text');
+
+    if (newMode === 'register') {
+      if (loginBox) loginBox.style.display = 'none';
+      if (regBox) regBox.style.display = 'block';
+      if (footLog) footLog.style.display = 'none';
+      if (footReg) footReg.style.display = 'block';
+      if (btnLogin) {
+        btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50";
+      }
+      if (btnReg) {
+        btnReg.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/80 dark:border-slate-700";
+      }
+      if (badgeText) badgeText.textContent = 'New Enterprise Account Setup';
+      if (headingText) headingText.textContent = 'Create your corporate account';
+      if (subText) subText.textContent = 'Register a new user profile to access document ingestion, OCR parsing, and workflows.';
+    } else {
+      if (loginBox) loginBox.style.display = 'block';
+      if (regBox) regBox.style.display = 'none';
+      if (footLog) footLog.style.display = 'block';
+      if (footReg) footReg.style.display = 'none';
+      if (btnReg) {
+        btnReg.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50";
+      }
+      if (btnLogin) {
+        btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/80 dark:border-slate-700";
+      }
+      if (badgeText) badgeText.textContent = 'Corporate Identity Verification';
+      if (headingText) headingText.textContent = 'Welcome back to AI-FLOW';
+      if (subText) subText.textContent = 'Enter your registered credentials below, or click an authorized company profile.';
+    }
+  }
+
+  function togglePassword(inputId) {
+    var inp = document.getElementById(inputId);
+    if (!inp) return;
+    inp.type = (inp.type === 'password') ? 'text' : 'password';
+  }
+
+  window.__aiflow_switch = switchMode;
+  window.__aiflow_toggle_pwd = togglePassword;
+})();
+              `,
+            }}
+          />
+
           {/* Mode Switcher Segmented Control: [Sign In] vs [Register] */}
           <div className="p-1 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-1 relative z-10">
             <button
@@ -404,6 +475,9 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
               onClick={handleSwitchToLogin}
               onMouseDown={(e) => {
                 e.preventDefault();
+                if (typeof window !== "undefined" && (window as any).__aiflow_switch) {
+                  (window as any).__aiflow_switch("login");
+                }
                 handleSwitchToLogin();
               }}
               className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none ${
@@ -422,6 +496,9 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
               onClick={handleSwitchToRegister}
               onMouseDown={(e) => {
                 e.preventDefault();
+                if (typeof window !== "undefined" && (window as any).__aiflow_switch) {
+                  (window as any).__aiflow_switch("register");
+                }
                 handleSwitchToRegister();
               }}
               className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none ${
@@ -439,14 +516,14 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
               <Shield className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-              <span>
+              <span id="auth-badge-text">
                 {mode === "login" ? "Corporate Identity Verification" : "New Enterprise Account Setup"}
               </span>
             </div>
-            <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+            <h2 id="auth-heading-text" className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
               {mode === "login" ? "Welcome back to AI-FLOW" : "Create your corporate account"}
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-xs">
+            <p id="auth-sub-text" className="text-slate-500 dark:text-slate-400 text-xs">
               {mode === "login"
                 ? "Enter your registered credentials below, or click an authorized company profile."
                 : "Register a new user profile to access document ingestion, OCR parsing, and workflows."}
@@ -479,8 +556,12 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
 
           {/* ========================================================
               FORM 1: SIGN IN (FOR OLD / EXISTING USERS)
+              Both forms exist in SSR HTML for zero hydration lag
               ======================================================== */}
-          {mode === "login" ? (
+          <div
+            id="auth-login-box"
+            style={{ display: mode === "login" ? "block" : "none" }}
+          >
             <form noValidate onSubmit={handleLoginSubmit} className="space-y-4">
               {/* Corporate Email Field */}
               <div className="space-y-1.5">
@@ -548,14 +629,22 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                   />
                   <button
                     type="button"
+                    id="login-eye-toggle-btn"
                     tabIndex={-1}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      if (typeof window !== "undefined" && (window as any).__aiflow_toggle_pwd) {
+                        (window as any).__aiflow_toggle_pwd("login-password");
+                      }
+                      setShowLoginPassword((prev) => !prev);
                     }}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      if (typeof window !== "undefined" && (window as any).__aiflow_toggle_pwd) {
+                        (window as any).__aiflow_toggle_pwd("login-password");
+                      }
                       setShowLoginPassword((prev) => !prev);
                     }}
                     aria-label={showLoginPassword ? "Hide password" : "Show password"}
@@ -589,6 +678,7 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
               {/* Sign In Button */}
               <button
                 type="submit"
+                id="signin-submit-btn"
                 disabled={isLoading}
                 className="w-full py-2.5 px-4 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 transition-all shadow-md hover:shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer z-10"
               >
@@ -648,10 +738,16 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                 </div>
               </div>
             </form>
-          ) : (
-            /* ========================================================
-               FORM 2: REGISTER (FOR NEW USERS)
-               ======================================================== */
+          </div>
+
+          {/* ========================================================
+              FORM 2: REGISTER (FOR NEW USERS)
+              Pre-rendered in HTML for immediate responsiveness
+              ======================================================== */}
+          <div
+            id="auth-register-box"
+            style={{ display: mode === "register" ? "block" : "none" }}
+          >
             <form noValidate onSubmit={handleRegisterSubmit} className="space-y-3.5">
               {/* Full Name */}
               <div className="space-y-1">
@@ -783,14 +879,22 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                     />
                     <button
                       type="button"
+                      id="reg-eye-toggle-btn"
                       tabIndex={-1}
                       onMouseDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (typeof window !== "undefined" && (window as any).__aiflow_toggle_pwd) {
+                          (window as any).__aiflow_toggle_pwd("reg-pass");
+                        }
+                        setShowRegPassword((prev) => !prev);
                       }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (typeof window !== "undefined" && (window as any).__aiflow_toggle_pwd) {
+                          (window as any).__aiflow_toggle_pwd("reg-pass");
+                        }
                         setShowRegPassword((prev) => !prev);
                       }}
                       title={showRegPassword ? "Hide password" : "Show password"}
@@ -825,14 +929,22 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                     />
                     <button
                       type="button"
+                      id="reg-confirm-eye-toggle-btn"
                       tabIndex={-1}
                       onMouseDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (typeof window !== "undefined" && (window as any).__aiflow_toggle_pwd) {
+                          (window as any).__aiflow_toggle_pwd("reg-confirm-pass");
+                        }
+                        setShowRegConfirmPassword((prev) => !prev);
                       }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (typeof window !== "undefined" && (window as any).__aiflow_toggle_pwd) {
+                          (window as any).__aiflow_toggle_pwd("reg-confirm-pass");
+                        }
                         setShowRegConfirmPassword((prev) => !prev);
                       }}
                       title={showRegConfirmPassword ? "Hide password" : "Show password"}
@@ -942,35 +1054,50 @@ export function AuthView({ initialMode = "login" }: AuthViewProps) {
                 )}
               </button>
             </form>
-          )}
+          </div>
 
           {/* Footer Helper Switch */}
           <div className="pt-3 border-t border-slate-200 dark:border-slate-800 text-center">
-            {mode === "login" ? (
+            <div id="footer-login-msg" style={{ display: mode === "login" ? "block" : "none" }}>
               <p className="text-xs text-slate-600 dark:text-slate-400">
                 Are you a new employee or tenant?{" "}
                 <button
                   type="button"
                   id="footer-register-link"
                   onClick={handleSwitchToRegister}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    if (typeof window !== "undefined" && (window as any).__aiflow_switch) {
+                      (window as any).__aiflow_switch("register");
+                    }
+                    handleSwitchToRegister();
+                  }}
                   className="font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                 >
                   Register here
                 </button>
               </p>
-            ) : (
+            </div>
+            <div id="footer-register-msg" style={{ display: mode === "register" ? "block" : "none" }}>
               <p className="text-xs text-slate-600 dark:text-slate-400">
                 Already have an authorized account?{" "}
                 <button
                   type="button"
                   id="footer-login-link"
                   onClick={handleSwitchToLogin}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    if (typeof window !== "undefined" && (window as any).__aiflow_switch) {
+                      (window as any).__aiflow_switch("login");
+                    }
+                    handleSwitchToLogin();
+                  }}
                   className="font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                 >
                   Sign in here
                 </button>
               </p>
-            )}
+            </div>
           </div>
         </div>
       </div>
